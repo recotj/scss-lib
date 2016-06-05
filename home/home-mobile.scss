@@ -1,0 +1,30 @@
+@import "../reset";
+@import "constants";
+
+html {
+	overflow: hidden;
+}
+
+body {
+	height: 100%;
+	overflow: hidden;
+
+	@at-root {
+		#slider {
+			height: 100%;
+			ul, li, .content {
+				height: 100%;
+			}
+			@for $i from 1 through 7 {
+				.content-img-#{$i+-1} {
+					background: if($i==1, #2ed5b9, #f8f8f0) url($img-directory + 'mobile/home-mobile-img' + $i + '.png') center no-repeat;
+					background-size: 100%;
+				}
+			}
+		}
+
+		#warn {
+			display: none;
+		}
+	}
+}

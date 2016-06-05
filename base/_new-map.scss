@@ -1,0 +1,132 @@
+//Map Operation
+@import 'type-check';
+@import 'type-conversion';
+
+@function map-test($map,$key-list,$filter:map-has-key,$greed:false,$args...) {
+	//check whether parameters: $map, $filter are in valid type.
+	$check: check-map($map) check-function-exist($filter);
+	//check whether parameters: $greed, $key-list are in valid type. If invalid, give out warnings and convert them into
+	//the required type.
+	$greed: to-boolean($greed, true);
+	$key-list: to-list($key-list, true);
+	//check whether $key-list is an empty list. If so, assign it a reference of map-keys($map), which means we only test
+	//the $map itself regardless of the candidate list: $key-list.
+	$keys: if($key-list==(), map-keys($map), $key-list);
+	$result: $greed;
+	@each $key in $keys {
+		@if $greed {
+			@if not to-boolean(call($filter,$map,$key,$args...)) {
+				@return false;
+			}
+		} @else {
+			@if map-has-key($map,$key) and to-boolean(call($filter,$map,$key,$args...)) {
+				@return true;
+			}
+		}
+	}
+	@return $result;
+}
+
+@function map-match($map,$key-list,$default:null,$filter:map-has-key,$process:map-get,$greed:false,$args...) {
+	//check whether parameters: $map, $filter are in valid type.
+	$check: check-map($map) check-function-exist($filter, $process);
+	//check whether parameters: $greed, $key-list are in valid type. If invalid, give out warnings and convert them into
+	//the required type.
+	$greed: to-boolean($greed, true);
+	$key-list: to-list($key-list, true);
+	//check whether $key-list is an empty list. If so, assign it a reference of map-keys($map), which means we only test
+	//the $map itself regardless of the candidate list: $key-list.
+	$keys: if($key-list==(), map-keys($map), $key-list);
+	$result: ();
+	$result-type: null;
+	@each $key in $keys {
+		$result-item: null;
+		@if map-has-key($map,$key) and to-boolean(call($filter,$map,$key,$args...)) {
+			$result-item: call($process, $map, $key);
+		} @else if is-map($default) {
+			$result-item: ($key:map-get($default, $key));
+		}
+
+		@if $result-item {
+			@if $greed {
+				//test the result type only at the first time
+				@if $result-type==null {
+					$result-type: is-map($result-item);
+				}
+
+				@if $result-type and is-map($result-item) {
+					$result: map-merge($result, $result-item);
+				} @else if is-list($result-item) {
+					$result: join($result, $result-item);
+				} @else {
+					$result: append($result, $result-item);
+				}
+			} @else {
+				@return $result-item;
+			}
+		}
+	}
+	//check whether nothing matches.
+	@return if($result!=(), $result, $default);
+}
+
+//
+@function _map-numeric($map,$key) {
+	@return is-number(map-get($map, $key));
+}
+
+@function _map-has-unit($map,$key,$unit:px) {
+	@return has-unit(map-get($map, $key), $unit);
+}
+
+@function _map-get-pair($map,$key) {
+	@return (#{$key}:map-get($map, $key));
+}
+
+@function _map-value-types($map,$key) {
+	@return type-of(map-get($map, $key));
+}
+
+///
+@function map-has-numeric-key($map,$key-list,$greed:false) {
+	@return map-test($map, $key-list, _map-numeric, $greed);
+}
+
+@function map-has-key-with-unit($map,$key-list,$unit:px,$greed:false) {
+	@return map-test($map, $key-list, _map-has-unit, $greed, $unit);
+}
+
+///
+@function map-select-key($map,$key-list,$default:null) {
+	@return map-match($map, $key-list, $default);
+}
+
+@function map-select-key-with-unit($map,$key-list,$unit:px,$default:null) {
+	@return map-match($map, $key-list, $default, _map-has-unit, map-get, false, $unit);
+}
+
+@function map-select-pair($map,$key-list,$default:null) {
+	@return map-match($map, $key-list, $default, map-has-key, _map-get-pair, false);
+}
+
+@function map-select-pair-with-unit($map,$key-list,$unit:px,$default:null) {
+	@return map-match($map, $key-list, $default, _map-has-unit, _map-get-pair, false);
+}
+
+@function map-select-pairs($map,$key-list,$default:null) {
+	@return map-match($map, $key-list, $default or $key-list, map-has-key, _map-get-pair, true);
+}
+
+@function map-select-pairs-with-unit($map,$key-list,$unit:px,$default:null) {
+	@return map-match($map, $key-list, $default, _map-has-unit, _map-get-pair, true);
+}
+
+@function map-process($map,$process:map-get,$args...) {
+	@return map-match($map, $map, $map, map-has-key, $process, true, $args...);
+}
+
+@function map-types($map) {
+	@return map-process($map, _map-value-types);
+}
+
+

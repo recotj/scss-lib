@@ -1,0 +1,19 @@
+#switcher {
+	padding: 36px 0;
+	text-align: center;
+	a {
+		display: inline-block;
+		margin: 0 12px;
+		width: 180px;
+		font-size: 18px;
+		line-height: 68px;
+		border-radius: (68px/2);
+		background: #e1e1d9;
+		color: #858680;
+
+		img {
+			margin-right: 8px;
+
+		}
+	}
+}

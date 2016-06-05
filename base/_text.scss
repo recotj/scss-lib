@@ -1,0 +1,6 @@
+//text
+
+@mixin ellipsis {
+	overflow: hidden;
+	text-overflow: ellipsis;
+}

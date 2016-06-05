@@ -1,0 +1,317 @@
+@import "type-check";
+@import "type-conversion";
+@import "stringify";
+@import "base-fn";
+@import "layout-base";
+@import "table";
+@import "math";
+@import "layout";
+
+@mixin test-args($args...) {
+	$data: keywords($args);
+	data: inspect($data);
+	type: type-of($data);
+	@each $item in map-keys($data) {
+		#{$item}: variable-exists($item);
+	}
+}
+
+@function amid($var,$lower,$higher) {
+	$min: min($lower, $higher);
+	$max: max($lower, $higher);
+	@if $var>$min and $var<$max {
+		@return true;
+	}
+	@return false;
+}
+
+//@function expand-margins($margins){
+//  $margins:to-list($margins);
+//  @if length($margins)<2{
+//    $margins:append($margins,nth($margins,1));
+//  }
+//  @if length($margins)<3{
+//    $margins:append($margins,nth($margins,1));
+//  }
+//  @if length($margins)<4{
+//    $margins:append($margins,nth($margins,2));
+//  }
+//  @return list-slice($margins,1,4);
+//}
+
+//@function shrink-margins($margins){
+//  $margins:to-list($margins);
+//  $margins:if(length($margins)>4,list-slice($margins,1,4),$margins);
+//  @if length($margins)==4 and nth($margins,4)==nth($margins,2){
+//    $margins:list-slice($margins,1,3);
+//  }
+//  @if length($margins)==3 and nth($margins,3)==nth($margins,1){
+//    $margins:list-slice($margins,1,2);
+//  }
+//  @if length($margins)==2 and nth($margins,2)==nth($margins,1){
+//    $margins:list-slice($margins,1,1);
+//  }
+//  @return $margins;
+//}
+
+@function list-swap($list,$index1,$index2) {
+	$check: check-list($list) check-number($index1, $index2);
+	$temp: nth($list, $index1);
+	$list: set-nth($list, $index1, nth($list, $index2));
+	$list: set-nth($list, $index2, $temp);
+	@return $list;
+}
+
+@function bubble-sort($list,$ascend:true) {
+	$list: to-list($list);
+	$length: length($list);
+	@for $i from 1 through $length+-1 {
+		//    $test:true;
+		@for $j from 1 through $length+-$i {
+			@if $ascend == (nth($list,$j)>nth($list,$j+1)) {
+				$list: list-swap($list, $j, $j+1);
+				//        $test:false;
+			}
+		}
+		//    @if $test{
+		//      @return $list;
+		//    }
+	}
+	@return $list;
+}
+
+@function str-find($str,$list) {
+	$check: check-string($str) check-list($list);
+	@each $item in $list {
+		@if str-index($str, $item) {
+			@return index($list, $item);
+		}
+	}
+	@return null;
+}
+
+@function border-modify($border-map) {
+	$borders: create-table((
+		border-direction:'top',
+		border-width:0,
+		border-color:#000000,
+		border-style:'solid',
+	));
+	@each $item in 'top' 'right' 'left' 'bottom' {
+		$borders: table-insert($borders, $item);
+	}
+	$modified: false;
+	$border-fields: table-fields($borders);
+	$border-fields-types: table-fields-types($borders);
+	@if $border-map and check-map($border-map) {
+		@each $key, $value in $border-map {
+			$key: str-split($key, '-');
+			@warn '$key: #{$key}';
+
+			@if nth($key,1)=='border' {
+				$processed-value: ();
+				@each $item in to-list($value) {
+					$index: index($border-fields-types, type-of($item));
+					$processed-value: map-merge($processed-value, (
+						nth($border-fields, index($border-fields-types, type-of($item))):$item,
+					));
+				}
+				@warn '$value: #{inspect($processed-value)}';
+
+				@if length($key)==1 {
+					@each $item in table-column($borders) {
+						$borders: table-modify-record($borders, $item, $processed-value);
+					}
+					$modified: true;
+				} @else if length($key)==2 {
+					$key: nth($key, 2);
+					@warn 'length=2: #{$key}';
+					@warn '$border-fields: #{$border-fields}';
+					@if index(table-column($borders), 'border'+$key) {
+						$borders: table-modify-record($borders, $key, $processed-value);
+						$modified: true;
+					} @else if index($border-fields, 'border'+$key) {
+						$borders: table-modify-column($borders, $key, expand-margins($value));
+						$modified: true;
+						@warn 'border-width: #{inspect(expand-margins($value))}';
+					}
+				} @else if length($key)==3 {
+					@if index(table-column($borders),'border'+nth($key,2)) and index($border-fields-types,'border'+nth($key,3)) {
+						$borders: table-modify-record($borders, nth($key, 2), nth($key, 3), value);
+						$modified: true;
+					}
+				}
+			}
+		}
+	}
+	//  $content:table-content(table-transpose($borders));
+	//  $result:();
+	//  @each $key,$value in $content{
+	//    @if $key!= table-unique-id($borders){
+	//      $result:map-merge($result,('border-'+$key:shrink-margins($value)));
+	//    }
+	//  }
+	//  @return $result;
+	@return if($modified, $borders, table-clear($borders));
+
+}
+
+@mixin print-map-pair-index($map) {
+	$check: check-map($map);
+	@each $key, $value in $map {
+		map-index-#{index($map,($key $value))}: inspect($key+': '+$value);
+	}
+}
+
+@function args($args...) {
+	@return (type:type-of($args), value:$args);
+}
+
+.test-for-type {
+	check-multiple-type: check-multiple-type('a', map, (STRING, list, number, boolean));
+	to-number: to-number('-13') 1 2 3 4 5 6 7;
+}
+
+.test-for-string {
+	str-split: inspect(str-split('a-b-c-d', '-'));
+	str-split-with-empty-char: inspect(str-split('a-b-c-d', ''));
+	str-index: str-index('abc', '');
+	str-replace: str-replace('border-direction-width', '-direction', '-left');
+	str-length: str-length('')==0;
+}
+
+.test-for-list {
+	list-swap: list-swap((5, 4, 3, 2, 1), 1, 2);
+	list-slice: inspect(list-slice((1, 2, 3, 4, 5, 6), 0));
+	list-insert: inspect(list-insert((1, 2, 3, 4, 5, 6, 7, 8), (a, b, c), -1, true));
+	list-remove: inspect(list-remove((1, 2, 3, 4, 5, 6, 7, 8), 6, 4));
+	list-combine-to-map: inspect(list-combine-to-map((a, b, c), (1, 2, 3, 4)));
+	list-resize: inspect((list-resize((1, 2, 3, 4), 9, a)));
+}
+
+.test-for-map {
+	map-merge: inspect(map-merge((a:1, b:2, c:3), (b:12, c:13, d:14)));
+	map-keys-equal: map-keys((width:10px,height:20px,))==map-keys((height:30px,width:10px,));
+	map-types: map-types((border-width:0, border-color:#000000, border-style:solid,));
+
+	//  value23:length(());
+	@include print-map-pair-index(map-merge((width:10px, height:20px,), (width:30px,)));
+	map-merge: inspect(map-merge((a:1, b:2), (a:null or 3)));
+}
+
+.test-for-table {
+	$table: create-table((border-direction:left, border-width:0, border-color:#000000, border-style:solid,));
+
+	//  $table:create-table((border-width border-color border-style),'width',('number' 'color'));
+
+	$table: table-insert($table, (left, 1px, #ffffff, none,));
+	$table: table-insert($table, (right, 2px));
+	$table: table-insert($table, (right, px, #333333));
+
+	$table: table-insert($table, ('', 4px, #333333));
+
+	//  $table:table-remove($table);
+
+	table: inspect($table);
+
+	table-info: inspect(table-info($table));
+
+	table-fields: inspect(table-fields($table));
+
+	table-fields-types: inspect(table-fields-types($table));
+
+	table-defaults: inspect(table-default-value($table));
+
+	table-content: inspect(table-content($table));
+
+	table-test: inspect(table-test-by-field($table, 'border-style', 'solid'));
+
+	$table: table-transpose($table);
+
+	table-transpose: inspect($table);
+
+	transpose-content: inspect(table-content($table));
+
+	$table: table-transpose($table);
+
+	normal-content: inspect(table-content($table));
+
+	column-border-width: inspect(table-column($table, 'border-width'));
+
+	column-border-style: inspect(table-column($table, 'border-style'));
+
+	record-right: inspect(table-record($table, 'right'));
+
+	modify-record: inspect((table-modify-record($table, 'right', 'border-width', 12px)));
+
+	modify-column: inspect(table-modify-column($table, 'border-style', ('dotted', 'gashed')));
+}
+
+.test-for-args {
+	@include test-args($a: 1, $b: 'abc');
+	args: inspect(args(map, (STRING, list, number, boolean)));
+}
+
+.test-for-utils {
+	bubble-sort: bubble-sort((5, 4, 3, 2, 1));
+	index: index((width:10px, height:20px), (height 20px));
+	join: join((1, 2), (2, 3));
+	$index: 8;
+	test-minus-char: $index+-4*floor($index/4);
+}
+
+.test-for-css {
+	_parse-key-name: inspect(_parse-key-name('bo-l-w'));
+	expand-margins: inspect(expand-margins((1, 2, 3, 4, 5)));
+
+	$expander: expand-margins((1));
+
+	expand-margins-single: inspect($expander);
+	shrink-margins: inspect(shrink-margins($expander));
+
+	$borders-test: border-modify((
+		border1:1px solid #ababab,
+		border2-top:2px dotted #464563,
+		border3-width:4px 7px,
+	));
+
+	border-modify: inspect($borders-test);
+}
+
+.test-for-test-functions {
+	@function test-args($vars...) {
+		@return append($vars, 4);
+	}
+	@function test-if($a) {
+		$r: 'r';
+		@if $a>0 {
+			$r: 'y';
+		} @else if $a>-10 {
+			$r: 'n';
+		}
+		@return $r;
+	}
+
+	test-if: test-if(-1);
+
+	args-unzip: args-unzip((1, 2, 3), 4);
+}
+
+.test-for-layout {
+	@import "home/constants";
+	$init: init-global-layout((width:$display-width));
+	@include t-relative-layout((
+		//          width:1200px,
+		width:$display-width,
+		margin:400px,
+		min-width: $min-display-width,
+		max-width: $max-display-width,
+		//          'margin-left':20px,
+		//          'margin':30px 12px 5px,
+		//          'margin-top':16px,
+		'border':6px dotted #789012,
+		'border-width':10px 20px 30px,
+		'border-top':2px solid #123456,
+	));
+}
+

@@ -1,0 +1,153 @@
+//List Operation
+@import "type-check";
+
+@function isEmptyList($list) {
+	@return is-list($list) and length($list)==0;
+}
+
+@function isNonEmptyList($list) {
+	@return is-list($list) and length($list)>0;
+}
+
+@function isInBounds($list,$index) {
+	@return is-list($list) and has-unit($index,"") and length($list)>=$index;
+}
+
+//determine if the item of the list exists
+@function hasItem($list,$item) {
+	@if is-list($list) {
+		@each $element in $list {
+			@if $element==$item {
+				@return true;
+			}
+		}
+	}
+	@return false;
+	//  @return isList($list) and has-unit($index,"") and length($list)>=$index;
+}
+
+//function for all items
+//test all items
+@function testAllItems($list,$test) {
+	$result: false;
+	@if is-list($list) and function_exists($test) {
+		$result: true;
+		@each $item in $list {
+			@if not call($test,$item) {
+				$result: false;
+			}
+		}
+	}
+	@return $result;
+}
+
+//test some items
+@function testSomeItem($list,$test) {
+	$result: false;
+	@if is-list($list) and function_exists($test) {
+		@each $item in $list {
+			@if call($test, $item) {
+				$result: true;
+			}
+		}
+	}
+	@return $result;
+}
+
+//filter all items
+@function filterItems($list,$filter) {
+	$result: ();
+	@if is-list($list) and function_exists($filter) {
+		@each $item in $list {
+			@if call($filter, $item) {
+				$result: append($result, $item);
+			}
+		}
+	}
+	@return $result;
+}
+
+@function processAllItems($list,$process) {
+
+}
+
+//determine if the item of the list passes the test implemented by the given $filter function
+@function hasItemByFilter($list,$index,$filter,$args...) {
+	//  @return hasItem($list,$index) and function_exists($filter) and call($filter,nth($list,$index),$args...);
+	@return isInBounds($list,$index) and function_exists($filter) and call($filter,nth($list,$index),$args...);
+}
+
+//determine if the item of the list is a plain number
+@function hasNumericItem($list,$index) {
+	@return hasItemByFilter($list, $index, isNumber);
+	//  @return hasItem($list,$index) and isNumber(map-get($map,$key));
+}
+
+//determine if the item of the list is a number with given unit
+@function hasItemWithUnit($list,$index,$unit:"px") {
+	@return hasItemByFilter($list, $index, hasUnit, $unit);
+}
+
+//select a valid item of the list from the candidate list of indexes and return the valid item
+@function selectItem($list,$index-list,$default:null) {
+	@if is-list($list) and (not is-map($index-list)) {
+		$indexes: if(is-list($index-list), $index-list, ($index-list));
+		@each $index in indexes {
+			@if hasItem($list, $index) {
+				@return nth($list, $index);
+			}
+		}
+	}
+	@return $default;
+}
+
+//select a valid item of the list from the candidate list of indexes and return the valid item if passing the test
+//implemented by the given $filter function
+@function selectItemByFilter($list,$index-list,$filter,$default:null,$args...) {
+	@if is-list($list) and (not is-map($index-list)) {
+		$indexes: if(is-list($index-list), $index-list, ($index-list));
+		@each $index in indexes {
+			@if hasItemByFilter($list, $index, $filter, $args...) {
+				@return nth($list, $index);
+			}
+		}
+	}
+	@return $default;
+}
+
+//select a plain numeric item of the list from the candidate list of indexes
+@function selectNumericItem($list,$index-list,$default:null) {
+	@return selectItemByFilter($list, $index-list, hasNumericItem, $default);
+}
+
+//select a numeric item with the given unit of the list from the candidate list of indexes
+@function selectItemWithUnit($list,$index-list,$default:null,$unit:"px") {
+	@return selectItemByFilter($list, $index-list, hasItemWithUnit, $default, $unit);
+}
+
+//process the selected item and return the processed one
+@function processSelectedItem($list,$index,$process,$default:null) {
+	@if hasItem($list, $index) {
+		@if function_exists($process) {
+			@return call($process, nth($list, $index));
+		}
+		@return nth($list, $index);
+	}
+	@return $default;
+}
+
+//process the filtered item  and return the processed one
+@function processSelectedItemByFilter($list,$index,$filter,$process,$degrade-process,$default:null,$args...) {
+	@if hasItemByFilter($list, $index, $filter, $args...) {
+		@if function_exists($process) {
+			@return call($process, nth($list, $index));
+		}
+	}
+		//graceful degradation
+	@else if hasItem($list, $index) {
+		@if function_exists($degrade-process) {
+			@return call($degrade-process, nth($list, $index));
+		}
+	}
+	@return $default;
+}

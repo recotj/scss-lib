@@ -1,0 +1,28 @@
+$inline-blocks-default-padding: -0.25em !default;
+$safe-padding: 3px;
+
+@mixin grids($item-width,$item-height,$columns,$max-rows,$min-rows:1,$horizontal-padding:0,$vertical-padding:null) {
+	.grids-viewport {
+		$vertical-padding: $vertical-padding or $horizontal-padding;
+		width: $item-width*$columns + $horizontal-padding*($columns+-1);
+		min-height: $item-height*$min-rows + $vertical-padding*($min-rows+-1);
+		max-height: $item-height*$max-rows + $vertical-padding*($max-rows+-1);
+		overflow: hidden;
+
+		.grids {
+			margin: (-$vertical-padding/2) (-$horizontal-padding/2);
+			width: ($item-width+$horizontal-padding)*$columns;
+			letter-spacing: $inline-blocks-default-padding;
+			word-spacing: $inline-blocks-default-padding;
+			font-size: 0;
+
+			.grid {
+				display: inline-block;
+				margin: ($vertical-padding/2) ($horizontal-padding/2);
+				width: $item-width+-$safe-padding;
+				height: $item-height;
+				@content;
+			}
+		}
+	}
+}

@@ -1,0 +1,218 @@
+///Map Operation
+@import "type-check";
+@import "type-conversion";
+
+///determine if the map has the given key
+@function hasKey($map,$key) {
+	@if not is-map($map) {
+		@error "Wrong type of $map:#{$map}. Parameter of map type required.";
+	}
+	@return map-has-key($map, $key);
+}
+
+///determine if the value associated with the key of the map passes the test implemented by the given $filter function
+@function hasKeyByFilter($map,$key,$filter, $args...) {
+	@if hasKey($map, $key) {
+		@if not function_exists($filter) {
+			@error "function #{$filter} does not exist.";
+		}
+		@return call($filter, map-get($map, $key), $args...);
+	}
+	@return false;
+	//  @return hasKey($map,$key) and function_exists($filter) and call($filter,map-get($map,$key),$args...);
+}
+
+///determine if the value associated with the key of the map is a plain number
+@function hasNumericKey($map, $key) {
+	@return hasKeyByFilter($map, $key, isNumber);
+	//  @return hasKey($map,$key) and isNumber(map-get($map,$key));
+}
+
+///determine if the value associated with the key of the map is a number with given unit
+@function hasKeyWithUnit($map,$key,$unit:px) {
+	@return hasKeyByFilter($map, $key, has-unit, $unit);
+	//  @return isMap($map) and map-has-key($map,$key) and has-unit(map-get($map,$key),$unit);
+}
+
+///determine if the value associated with the key of the map is a number with given unit
+@function hasKeyWithUnitForAll($map-list,$key-list,$unit:px) {
+	$r: true;
+	$maps: if(is-list($map-list), $map-list, ($map-list));
+	$keys: if(is-list($key-list), $key-list, ($key-list));
+	@each $map in $maps {
+		@each $key in $keys {
+			@if not hasKeyWithUnit($map,$key,$unit) {
+				$r: false;
+			}
+		}
+	}
+	@return $r;
+}
+
+@function _hasMatchesFromKeyList($map,$key-list,$filter:map-has-key,$greed:false,$args...) {
+	@if not is-map($map) {
+		@error "Wrong type of $map:#{$map}. Parameter of map type required.";
+	}
+	@if not function_exists($filter) {
+		@error "function #{$filter} does not exist.";
+	}
+	@if not is-boolean($greed) {
+		@warn "Dreprecated type of $greed:#{$greed}. Parameter of boolean type required.";
+		$greed: to-boolean($greed);
+	}
+	$result: $greed;
+	$keys: ();
+	@if is-map($key-list) {
+		@warn "Dreprecated type of $key-list:#{$key-list}. Parameter of list or string type required.";
+		$keys: map-keys($key-list);
+	} @else {
+		$keys: if(is-list($key-list), $key-list, ($key-list));
+	}
+	@each $key in $keys {
+		@if $greed {
+			@if not to-boolean(call($filter,$map,$key,$args...)) {
+				$result: false;
+			}
+		} @else {
+			@if map-has-key($map,$key) and to-boolean(call($filter,$map,$key,$args...)) {
+				$result: true;
+			}
+		}
+	}
+	@return $result;
+}
+
+@function _selectMatchesFromKeyList($map,$key-list,$default:null,$filter:map-has-key,$process:map-get,$greed:false,$args...) {
+	@if not is-map($map) {
+		@error "Wrong type of $map:#{$map}. Parameter of map type required.";
+	}
+	@if not function_exists($filter) {
+		@error "function #{$filter} does not exist.";
+	}
+	@if not function_exists($process) {
+		@error "function #{$process} does not exist.";
+	}
+	@if not is-boolean($greed) {
+		@warn "Dreprecated type of $greed:#{$greed}. Parameter of boolean type required.";
+		$greed: to-boolean($greed);
+	}
+	$result: ();
+	$keys: ();
+	@if is-map($key-list) {
+		@warn "Dreprecated type of $key-list:#{$key-list}. Parameter of list or string type required.";
+		$keys: map-keys($key-list);
+	} @else {
+		$keys: if(is-list($key-list), $key-list, ($key-list));
+	}
+	@each $key in $keys {
+		@if map-has-key($map,$key) and to-boolean(call($filter,$map,$key,$args...)) {
+			$result-item: call($process, $map, $key);
+			@if $greed {
+				@if not variable_exists($result-item-type) {
+					$result-item-type: is-map($result-item);
+				}
+				@if $result-item-type {
+					$result: map-merge($result, $result-item);
+				} @else {
+					$result: append($result, $result-item);
+				}
+			} @else {
+				@return $result-item;
+			}
+		}
+	}
+	//check whether nothing matches.
+	@return if(is-map($result), $result, $default);
+}
+
+@function _selectKey($map,$key-list,$default:null) {
+	@return _selectMatchesFromKeyList($map, $key-list, $default);
+}
+
+@function _selectKeyByFilter($map,$key-list,$filter,$default:null) {
+	@return _selectMatchesFromKeyList($map, $key-list, $default, $filter)
+}
+
+@function _selectKeyWithUnit($map,$key-list,$unit:px,$default:null) {
+	@return _selectKeyByFilter($map, $key-list, $default, has-unit, map-get, false, $unit);
+}
+
+@function _getPair($map,$key) {
+	@return (#{$key}:map-get($map, $key));
+}
+
+@function _selectKeyValuePair($map,$key-list,$default:null) {
+	@return _selectMatchesFromKeyList($map, $key-list, $default, map-has-key, _getPair, false);
+}
+
+@function _selectKeyValuePairWithUnit($map,$key-list,$unit:px,$default:null) {
+	@return _selectMatchesFromKeyList($map, $key-list, $default, has-unit, _getPair, false);
+}
+
+///select a valid key of the map from the candidate list of keys and return the value associated with the valid key
+@function selectKey($map,$key-list,$default:null) {
+	@if not is-map($map) {
+		@error "Wrong type of $map:#{$map}. Parameter of map type required.";
+	}
+	@if is-map($key-list) {
+		@warn "Dreprecated type of $key-list:#{$key-list}. Parameter of list or string type required.";
+		$keys: $key-list;
+	} @else {
+		$keys: if(is-list($key-list), $key-list, ($key-list));
+		@each $key in $keys {
+			@if map-has-key($map, $key) {
+				@return map-get($map, $key);
+			}
+		}
+	}
+	@return $default;
+}
+
+//
+@function selectKeyByFilter($map,$key-list,$filter,$default:null, $args...) {
+	@if not is-map($map) {
+		@error "Wrong type of $map:#{$map}. Parameter of map type required.";
+	}
+	@if is-map($key-list) {
+		@warn "Dreprecated type of $key-list:#{$key-list}. Parameter of list or string type required.";
+		$keys: $key-list;
+	} @else {
+		$keys: if(is-list($key-list), $key-list, ($key-list));
+		@each $key in $keys {
+			@if hasKeyByFilter($map, $key, $filter, $args...) {
+				@return map-get($map, $key);
+			}
+		}
+	}
+	@return $default;
+}
+
+//
+@function selectKeyWithUnit($map,$key-list,$default:null,$unit:px) {
+	@return selectKeyByFilter($map, $key-list, has-unit, $default, $unit);
+}
+
+///select a valid key of the map from the candidate list of keys and return the valid key-value pair
+@function selectKeyValuePair($map,$key-list,$default:null) {
+	@if is-map($map) and (not is-map($key-list)) {
+		$keys: if(is-list($key-list), $key-list, ($key-list));
+		@each $key in $keys {
+			@if map-has-key($map, $key) {
+				@return (#{$key}:map-get($map, $key));
+			}
+		}
+	}
+	@return (#{nth($key-list,1)}:$default);
+}
+
+@function selectKeyMapWithUnit($map,$key-list,$default:null,$unit:px) {
+	@if is-map($map) and (not is-map($key-list)) {
+		$keys: if(is-list($key-list), $key-list, ($key-list));
+		@each $key in $keys {
+			@if hasKeyWithUnit($map, $key, $unit) {
+				@return (#{$key}:map-get($map, $key));
+			}
+		}
+	}
+	@return (#{nth($key-list,1)}:$default);
+}

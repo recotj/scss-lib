@@ -1,0 +1,51 @@
+//Selector-Tree
+@import "type-check";
+@import "type-conversion";
+@import "string-style";
+
+@function get-ancestor() {
+	$check: check-local-scope();
+	$ancestors: nth(&, 1);
+	@while length($ancestors)>1 {
+		$ancestors: list-slice($ancestors, 1, -1);
+		$ancestor: map-get($scopes, list-to-string($ancestors));
+		@if $ancestor {
+			@return $ancestor;
+		}
+	}
+	@return map-get($scopes, global);
+}
+
+@function create-scopes-if-not-exists() {
+	@if not global-variable-exists($scopes) {
+		$scopes: (global:$global) !global;
+	}
+	@return true;
+}
+
+@mixin layout($abs-child) {
+	$check: check-local-scope() create-scopes-if-not-exists();
+	@include relative-layout($abs-child, get-ancestor());
+	$local-scope-layout: parse-layout($abs-child);
+	$scopes: map-merge($scopes, (list-to-string(nth(&, 1)):$local-scope-layout)) !global;
+}
+
+@function map-to-string($map,$style:scss) {
+	$check: check-list($map) check-string($style) check-string-style($style);
+	$style: get-string-style($style);
+	$result: map-get($style, map-start);
+	@each $key, $value in $map {
+		$result: $result+$key+map-get($style,key-value-separator);
+		@if is-map($value) {
+			$result: $result+map-to-string($value,$style);
+		} @else if is-list($value) {
+			$result: $result+list-to-string($value,$style);
+		} @else {
+			$result: $result+$value;
+		}
+		$result: $result+map-get($style,pair-separator);
+	}
+	$result: $result+map-get($style,map-end);
+	@return $result;
+}
+

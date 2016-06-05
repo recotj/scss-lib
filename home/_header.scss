@@ -1,0 +1,94 @@
+@charset "utf-8";
+@import "constants";
+@import "../layout";
+
+$header-height: 119px;
+
+$init: init-global-layout((width:$display-width));
+
+html {
+	font-family: Microsoft YaHei;
+
+}
+
+body {
+	//  width:$display-width;
+	@include t-relative-content-box((
+		width:$display-width,
+		min-width: $min-display-width,
+		max-width: $max-display-width,
+	));
+	height: 100%;
+	color: #ffffff;
+
+	@at-root {
+		#header {
+			width: 100%;
+			height: $header-height;
+			background: #2ed5b9;
+
+			@at-root #header-content {
+				width: $content-width;
+				height: $header-height;
+				line-height: $header-height;
+				margin: 0 auto;
+
+				span {
+					line-height: 46px;
+				}
+
+				@at-root {
+					#header-navigate {
+						display: inline-block;
+						margin-left: 165px+-(100px/2+-18px);
+						li {
+							display: inline-block;
+							width: 100px;
+							line-height: 46px;
+							border-radius: 23px;
+							margin-right: 72px+-(100px+-18px*2);
+							font-size: 18px;
+							text-align: center;
+							cursor: pointer;
+
+							&:hover {
+								background: #ffffff;
+								color: #01be9e;
+							}
+						}
+					}
+
+					#header-download {
+						display: inline-block;
+						font-size: 14px;
+						margin-left: 116px;
+
+						a {
+							display: inline-block;
+							width: 138px;
+							line-height: 46px;
+							margin-left: 14px;
+							border-radius: 4px;
+							background: #1faf96;
+							color: #ffffff;
+							text-align: center;
+						}
+					}
+				}
+			}
+		}
+
+		#body {
+			width: 100%;
+			background: #f8f8f0;;
+
+			@at-root {
+				#body-content {
+					width: $content-width;
+					margin: 0 auto;
+					padding-bottom: 40px;
+				}
+			}
+		}
+	}
+}

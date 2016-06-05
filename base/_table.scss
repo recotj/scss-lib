@@ -1,0 +1,302 @@
+@import "type-check";
+@import "constants";
+@import "new-list";
+@import "new-map";
+
+@function table-info($table) {
+	$check: check-table($table);
+	@return map-get($table, 'info');
+}
+
+@function table-size($table) {
+	$check: check-table($table);
+	@return map-get($table, 'size');
+}
+
+@function table-fields($table) {
+	$check: check-table($table);
+	@return map-get(table-info($table), 'fields');
+}
+
+@function table-field-exist($table,$field) {
+	$check: check-table($table) check-string($field);
+	@return index(table-fields($table), $field);
+}
+
+@function table-fields-length($table) {
+	$check: check-table($table);
+	@return map-get(table-info($table), 'fields-length');
+}
+
+@function table-fields-types($table) {
+	$check: check-table($table);
+	@return map-get(table-info($table), 'fields-types');
+}
+
+@function table-field-type($table,$field) {
+	$index: table-field-exist($table, $field);
+	@return nth(table-fields-types($table), $index);
+}
+
+@function table-unique-id($table) {
+	$check: check-table($table);
+	@return map-get(table-info($table), 'unique-id');
+}
+
+@function table-default-value($table) {
+	$check: check-table($table);
+	@return map-get(table-info($table), 'fields-defaults');
+}
+
+@function table-content($table) {
+	$check: check-table($table);
+	@return if(
+			map-get($table,'state')=='normal',
+			map-get($table, 'content'),
+			map-get($table, 'transpose-content')
+	);
+}
+
+@function _check-redundant($content,$item,$field,$value) {
+	@return map-get($item,$field)==$value;
+}
+
+@function table-test-by-field($table,$field,$value) {
+	$check: check-table($table) check-string($field);
+	$content: table-content($table);
+	$item: list-filter-items($content, null, _check-redundant, $field, $value);
+	@return $item and index($content,nth($item,1));
+}
+
+@function table-record($table,$unique-id) {
+	$check: check-table($table);
+	$unique-id-type: nth(table-fields-types($table), index(table-fields($table), table-unique-id($table)));
+	$original-id: $unique-id;
+	$unique-id: call('to-'+$unique-id-type, $unique-id);
+	$content: table-content($table);
+	@each $record in $content {
+		@if map-get($record,table-unique-id($table))==$unique-id {
+			@return $record;
+		}
+	}
+	//  @if is-number($original-id) and list-in-bounds($content,$original-id){
+	//    @return nth($content,$original-id);
+	//  }
+	@return null;
+}
+
+@function table-record-exist($table,$record) {
+	$check: check-table($table);
+	$record: if(is-map($record), $record, to-list($record));
+}
+
+@function table-row($table,$unique-id) {
+	@return table-record($table, $unique-id);
+}
+
+@function table-column($table,$field:null) {
+	$check: check-table($table);
+	$field: $field or table-unique-id($table);
+	@if table-field-exist($table, $field) {
+		$result: ();
+		@each $item in table-content($table) {
+			$result: append($result, map-get($item, $field));
+		}
+		@return $result;
+	}
+	@return null;
+}
+
+@function table-print($table) {
+	$check: check-table($table);
+	@return inspect(map-get($table, 'content'));
+}
+
+@function create-table($fields,$unique-id:null,$types:(),$defaults:()) {
+	$check: check-multiple-type($fields, 'list', 'map');
+
+	$types: to-list($types);
+	$defaults: to-list($defaults);
+	$length: length($fields);
+	//modify $defaults
+	$defaults: list-resize($defaults, $length, if(is-list($fields), '', map-values($fields)), true);
+	//modify $types
+	$types: list-resize($types, $length, list-types($defaults), true);
+	$fields: to-list($fields);
+	$unique-id: if($unique-id and index($fields,$unique-id), $unique-id, nth($fields, 1));
+
+	@for $i from 1 through $length {
+		@if not index($type-list,nth($types,$i)) {
+			$types: set-nth($types, $i, 'string');
+		}
+		$defaults: set-nth($defaults, $i, call('to-'+nth($types,$i),nth($defaults,$i)) or
+      map-get($DEFAULT_VALUES,nth($types,$i)));
+	}
+
+	@return (
+		content:(),
+		transpose-content:(),
+		size:0,
+		state:'normal',
+		modified:false,
+		//what is in 'info' would be seldom modified, considered as constants.
+		info:(
+			fields:$fields,
+			fields-types:$types,
+			fields-defaults:$defaults,
+			fields-length:$length,
+			unique-id:quote($unique-id),
+		),
+	);
+}
+
+@function table-insert($table,$record) {
+	$check: check-table($table);
+	$record: if(is-map($record), $record, to-list($record));
+
+	@if $record==() {
+		@return $table;
+	}
+
+	@if is-list($record) {
+		$fields: table-fields($table);
+		$length: length($fields);
+		$record: list-resize($record, $length, table-default-value($table), true);
+		//    @if length($record)>$length{
+		//      $record:list-slice($record,1,$length);
+		//    }
+		$record: list-combine-to-map($fields, $record);
+	} @else {
+		$fields: list-combine-to-map(table-fields($table), table-default-value($table));
+		$record: map-merge($fields, map-select-pairs($record, $fields));
+		//    $record:map-merge(table-default-record($table),$record);
+	}
+
+	//check if unique-id of the record is not set or invalid(empty).
+	$unique-id: table-unique-id($table);
+	@if not to-boolean(map-get($record,$unique-id)) {
+		@warn 'unique-id(#{$unique-id}) of the record(#{inspect($record)}) is not set or invalid(empty)';
+		@return $table;
+	}
+
+	//modify $record
+	$fields-types: table-fields-types($table);
+	@for $i from 1 through table-fields-length($table) {
+		$key: nth(map-keys($record), $i);
+		$value: nth(map-values($record), $i);
+		$default: nth(table-default-value($table), $i);
+		$record: map-merge($record, ($key:call('to-'+nth($fields-types,$i),$value) or $default));
+	}
+
+	//  $record:map-merge(table-default-record($table),$record);
+	//  @return $record;
+	$index: table-test-by-field($table, $unique-id, map-get($record, $unique-id));
+	$content: if(
+			$index,
+			set-nth(table-content($table), $index, $record),
+			append(table-content($table), $record)
+	);
+	@return map-merge($table, (content:$content, modified:true, size:length($content)));
+}
+
+@function table-remove($table,$start:-1,$end:0) {
+	$check: check-table($table) check-number($start, $end);
+	$content: list-remove(table-content($table), $start, $end);
+	@return map-merge($table, (content:$content, modified:true, size:length($content)));
+}
+
+@function table-modify-record($table,$unique-id,$field,$new-value:null) {
+	$check: check-table($table);
+	$original-record: table-record($table, $unique-id);
+	@if $original-record {
+		$record: ();
+		@if is-list($field) {
+			$record: list-resize($field, table-fields-length($table), map-values($original-record), true);
+			$record: set-nth($field, index(table-column($table), $unique-id), $unique-id);
+		} @else {
+			@if is-map($field) {
+				$record: map-merge($original-record, $field);
+			} @else {
+				@if table-field-exist($table, $field) {
+					$record: ($field:$new-value);
+				}
+			}
+			//      $record:if($record!=(),map-merge($record,(table-unique-id($table):$unique-id)),$record);
+		}
+		@if $record!=() {
+			@return map-merge(table-insert($table, $record), (modified:true));
+		}
+	}
+	@return $table;
+}
+
+@function table-modify-column($table,$field,$new-value) {
+	$index: table-field-exist($table, $field);
+	$column: table-column($table, $field);
+	$size: table-size($table);
+	@if $size==0 {
+		@warn 'modification of column of table is only allowed when there are records in table.'
+	}
+	@if $column {
+		$type: table-field-type($table, $field);
+		//    @warn '$new-value:#{inspect($new-value)}';
+		//    @warn '$size:#{inspect($size)}';
+		$new-value: list-resize(to-list($new-value), $size, nth(table-default-value($table), $index));
+		//    @warn '$new-value:#{inspect($new-value)}';
+		$content: table-content($table);
+		@for $i from 1 through $size {
+			$new-value: set-nth($new-value, $i, call('to-'+$type, nth($new-value, $i)));
+			$content: set-nth($content, $i, map-merge(nth($content, $i), ($field:nth($new-value, $i))));
+		}
+		$transpose-content: map-merge(map-get($table,'transpose-content') or (), ($field:$new-value));
+		@return map-merge($table, (content:$content, transpose-content:$transpose-content, modified:false));
+	}
+	@return $table;
+}
+
+@function table-transpose-content($table) {
+	$check: check-table($table);
+	@if map-has-key($table,'transpose-content') and map-get($table,'modified') == false {
+		@return map-get($table, 'transpose-content');
+	}
+	$content: ();
+	@each $item in table-content($table) {
+		@each $key, $value in $item {
+			$values: if(map-has-key($content, $key), map-get($content, $key), ());
+			$content: map-merge($content, ($key:append($values, $value)));
+		}
+	}
+	@return $content;
+}
+
+//list of maps to map of lists
+@function table-transpose($table) {
+	$check: check-table($table);
+	@if map-get($table,'state')=='transpose' {
+		@return map-merge($table, (state:'normal'));
+	}
+	@return map-merge($table, (
+		transpose-content:table-transpose-content($table),
+		state:'transpose',
+		modified:false,
+	));
+}
+
+@function table-clear($table) {
+	$check: check-table($table);
+	@return map-merge($table, (
+		content:(),
+		transpose-content:(),
+		size:0,
+		state:'normal',
+		modified:false
+	));
+}
+
+@function table-get($table,$row,$column:false) {
+
+}
+
+@function table-set($table,$row,$column:false) {
+
+}

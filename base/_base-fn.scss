@@ -1,0 +1,256 @@
+@charset "utf-8";
+
+///Layout Base
+@import "type-check";
+@import "stringify";
+@import "new-map";
+@import "new-list";
+
+@mixin container {
+	width: 100%;
+	height: 0;
+	margin: 0 auto;
+}
+
+$LAYOUT_RELATIVE_BASE_LIST: (
+	width, height, font-size
+);
+$LAYOUT_RELATED_TO_WIDTH_LIST: (
+	width, min-width, max-width, left, right,
+	margin, margin-top, margin-right, margin-bottom, margin-left,
+	padding, padding-top, padding-right, padding-bottom, padding-left
+);
+$LAYOUT_RELATED_TO_HEIGHT_LIST: (
+	height, max-height, min-height, top, bottom
+);
+$LAYOUT_RELATED_TO_FONT_LIST: (
+	width, height, max-width, min-width, max-height, min-height,
+	line-height, word-spacing, letter-spacing,
+	border-top-width, border-right-width, border-left-width, border-bottom-width, border-width,
+	border-top-left-radius, border-top-right-radius, border-bottom-left-radius, border-bottom-left-radius,
+	border-radius
+);
+
+$LAYOUT_NAME_COMPONENT_MAPS: (
+	//layout box type
+	w:width, wd:width, width:width,
+	h:height, hg:height, height:height,
+	m:margin, mr:margin, mar:margin, mgn:margin, margin:margin,
+	p:padding, pd:padding, pad:padding, pdn:padding, padding:padding,
+	bd:border, bo:border, brd:border, bord:border, border:border,
+	ra:radius, rd:radius, radius:radius,
+	//layout text type
+	wr:word, wor:word, word:word,
+	le:letter, let:letter, letter:letter,
+	f:font, ft:font, font:font,
+	ln:line, line:line,
+	s:size, sz:size, size:size,
+	sp:spacing, space:spacing, spacing:spacing,
+	c:count, co:count, coun:count, count:count,
+	//layout direction
+	t:top, tp:top, top:top,
+	b:bottom, bt:bottom, bot:bottom, btm:bottom, bottom:bottom,
+	l:left, lt:left, lft:left, left:left,
+	r:right, rt:right, rgt:right, right:right
+);
+
+@function _parse-key-name($key) {
+	$check: check-string($key);
+	$result: '';
+	$key-component-list: str-split($key, '-');
+	@each $item in $key-component-list {
+		$temp: map-select-key($LAYOUT_NAME_COMPONENT_MAPS, $item);
+		@if $temp {
+			$result: $result+'-'+$temp;
+		}
+	}
+	@return unquote(str-slice($result, 2));
+}
+
+@function _parse-map($map) {
+	$result: ();
+	@if is-map($map) {
+		@each $key, $value in $map {
+			$key: _parse-key-name($key);
+			@if $key!='' {
+				$result: map-merge($result, (#{$key}:$value));
+			}
+		}
+	}
+	@return $result;
+}
+
+//calculate the amount of #{$raw} relative to #{$base} followed with the given #{$unit}
+//@param
+//  $raw: a number or a list inclusive of numbers
+//  $base: a number $raw relates to
+//  $unit: a number valued as 100%, 1em, 1px... and 100% as default
+//  $is-tolerant: a boolean that for true the invalid items of $raw, each of which is not a number nor comparable with $base(has
+//    same unit with $base), would reverse in the result, and for otherwise the invalid items would be rejected.
+//@return
+//  a relative amount or a list inclusive of relative amount.
+@function relative($raw, $base, $unit:100%, $is-tolerant:false) {
+	$result: ();
+	@if is-map($base) {
+		$base: _parse-map($base);
+		//parseMap would return an empty map:() in some case.However,type-of(())==list,thus we should check it again.
+		@if is-map($base) {
+			$base: if($unit==1em, map-get($base, font-size),
+				if($unit==100%, map-get($base, width), null));
+		}
+	}
+	@if is-number($base, $unit) {
+		@if is-number($raw) and comparable($raw, $base) {
+			$result: if($raw!=0, $raw/$base*$unit, 0);
+		} @else if is-list($raw) {
+			@each $r in $raw {
+				@if is-number($r) and comparable($r, $base) {
+					$result: append($result, if($r!=0, $r/$base*$unit, 0));
+				} @else if $is-tolerant {
+					$result: append($result, $r);
+				}
+			}
+		}
+	}
+	@return if(is-empty-list($result), null, $result);
+}
+
+//a same function as #{@function relative} with abbreviated name.
+@function rel($raw, $base, $unit:100%) {
+	@return relative($raw, $base, $unit);
+}
+
+//calculate the relative layout
+//@param
+//  $abs-child: a map with keys which stands for some properties of l
+@mixin relative-layout($abs-child,$abs-parent) {
+	//check whether runs in local scope and check whether parameters: $abs-child, $abs-parent are in valid type.
+	$check: check-local-scope() check-map($abs-child, $abs-parent);
+	//set relative layout property.
+	//all these relative layout property is percentage of absolute property to width of parent element.
+	$parent-width: null;
+	@each $key, $value in $abs-parent {
+		@if _parse-key-name($key)==width and has-unit($value) {
+			$parent-width: $value;
+		}
+	}
+	@if $parent-width {
+		@each $key, $value in $abs-child {
+			$key: _parse-key-name($key);
+			//test if the key
+			@if index($LAYOUT_RELATED_TO_WIDTH_LIST, $key) {
+				$value: rel($value, $parent-width);
+				@if $value {
+					#{$key}: $value;
+				}
+			}
+		}
+	}
+}
+
+@mixin relative-box($abs-child,$abs-parent) {
+	//check whether runs in local scope and check whether parameters: $abs-child, $abs-parent are in valid type.
+	$check: check-local-scope() check-map($abs-child, $abs-parent);
+	//set relative layout property.
+	//all these relative layout property is percentage of absolute property to width of parent element
+	@include relative-layout($abs-child, $abs-parent);
+	//set relative height
+	@if map-has-key-with-unit($abs-parent,height) and map-has-key-with-unit($abs-child,height) {
+		height: rel(map-get($abs-child, height), map-get($abs-parent, height));
+	}
+}
+
+@mixin relative-content-box($abs-child,$abs-parent) {
+	//check whether runs in local scope and check whether parameters: $abs-child, $abs-parent are in valid type.
+	$check: check-local-scope() check-map($abs-child, $abs-parent);
+	//set relative layout property.
+	//all these relative layout property is percentage of absolute property to width of parent element
+	@include relative-layout($abs-child, $abs-parent);
+	//set line-height;
+	@if map-has-key-with-unit($abs-child,font-size) and map-has-key-with-unit($abs-parent,font-size) {
+		$font-size: map-get($abs-child, font-size);
+		$line-padding: map-select-key-with-unit($abs-child, line-padding, px, 0px);
+		$line-height: map-select-key-with-unit($abs-child, line-height, px, $font-size+$line-padding);
+		font-size: rel($font-size, map-get($abs-parent, font-size), 1em);
+		line-height: rel($line-height, $font-size, 1em);
+		@if map-has-key-with-unit($abs-child, line-count, "") {
+			max-height: rel(map-get($abs-child,line-count)*$line-height, $font-size, 1em);
+			height: auto !important;
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+		//set border(like 0.5em solid #ffffff) related to font-size ;
+		$border: map-select-key-with-unit($abs-child, border);
+		@if is-list($border) {
+			$_border: ();
+			@each $element in $border {
+				@if has-unit($element) {
+					$element: rel($element, $font-size, 1em);
+				}
+				$_border: append($_border, $element);
+			}
+			border: $_border;
+		}
+
+		//set word-spacing, letter-spacing, border-width, border-radius related to font-size;
+		$content-size: (
+			word-spacing, letter-spacing,
+			border-top-width, border-right-width, border-left-width, border-bottom-width, border-width,
+			border-top-left-radius, border-top-right-radius, border-bottom-left-radius, border-bottom-left-radius,
+			border-radius
+		);
+		@each $size in $content-size {
+			@if map-has-key-with-unit($abs-child, $size) {
+				#{$size}: rel(map-get($abs-child, $size), $font-size, 1em);
+			}
+		}
+		//set min-width;
+		@if map-has-key($abs-child, letter-count) {
+			$letter-count: map-get($abs-child, letter-count);
+			@if has-unit($letter-count, '') {
+				min-width: $letter-count * 1em;
+			} @else if is-list($letter-count) {
+				$counts: list-select-item-with-unit($letter-count, '');
+				$count-1: list-select-item-with-unit-by-index($letter-count, 1);
+				$count-2: list-select-item-with-unit-by-index($letter-count, 2);;
+				@if $count-1 {
+					min-width: $count-1 * 1em;
+				}
+				@if $count-2 {
+					max-width: $count-2 * 1em;
+				}
+			}
+		}
+		//adjust vertical margin or padding since presence of line-padding
+		@if $line-padding>0 and map-has-key-with-unit($abs-parent,width) {
+			$parent-width: map-get($abs-parent, width);
+			$mg-top: (margin-top:0px);
+			$mg-bottom: (margin-bottom:0px);
+			$mg-pd-top: map-select-pairs-with-unit($abs-child, $mg-top, px, $mg-top);
+			$mg-pd-bottom: map-select-pairs-with-unit($abs-child, $mg-bottom, px, $mg-bottom);
+			@each $key, $value in $mg-pd-top {
+				#{$key}: rel($value+$line-padding/2, $parent-width);
+			}
+			@each $key, $value in $mg-pd-bottom {
+				#{$key}: rel($value+$line-padding/2, $parent-width);
+			}
+		}
+	}
+}
+
+@mixin shape-box($abs-child,$abs-parent) {
+	//check whether runs in local scope and check whether parameters: $abs-child, $abs-parent are in valid type.
+	$check: check-local-scope() check-map($abs-child, $abs-parent);
+	$parent-width: if(map-has-key-with-unit($abs-parent, width), map-get($abs-parent, width), if(has-unit($abs-parent), $abs-parent, null));
+	@if $parent-width {
+		@if map-has-key-with-unit($abs-child, width) {
+			width: rel(map-get($abs-child, width), $parent-width);
+		}
+		$height: map-select-key-with-unit($abs-child, (height, padding-bottom));
+		@if $height {
+			height: 0;
+			padding-bottom: rel($height, $parent-width);
+		}
+	}
+}
+

@@ -1,0 +1,79 @@
+@import "constants";
+@import "../reset";
+@import "header";
+@import "pager";
+@import "footer";
+
+$tag: #help;
+$navi-width: 238px;
+@at-root {
+	#header-navigate li {
+		background: #2ed5b9;
+		color: #ffffff;
+	}
+
+	#header-navigate li:nth-child(5) {
+		background: #ffffff;
+		color: #01be9e;
+	}
+
+	#help-title {
+		width: 100%;
+		padding: 36px 0;
+		font-size: 30px;
+		color: #00342c;
+		background: url(#{$userhelp-img-directory}banner.png) no-repeat right bottom;
+	}
+
+	#help-body {
+		background: #ffffff;
+		border: 1px #d1d1d1 solid;
+		border-radius: 12px;
+		@at-root {
+			#help-navigate {
+				float: left;
+				width: $navi-width;
+				li {
+					height: 60px;
+					padding-left: 24px;
+					line-height: 60px;
+					font-size: 18px;
+					color: #9f9f9f;
+					border-bottom: 1px #d1d1d1 solid;
+					cursor: pointer;
+					img {
+						margin-right: 18px;
+					}
+					&:visited, &:hover {
+						background: #2fd5b9;
+						color: #ffffff;
+					}
+				}
+			}
+
+			#help-content {
+				//        width:$content-width+-$navi-width+-3px;
+				min-height: 60px*8+7px;
+				margin-left: $navi-width;
+				padding: 46px;
+				border-left: 1px #d1d1d1 solid;
+				font-size: 16px;
+				line-height: 1.5;
+				dl {
+					display: none;
+				}
+				#help-content-hot {
+					display: block;
+				}
+				dt {
+					color: #2fd5b9;
+					margin-bottom: 12px;
+				}
+				dd {
+					color: #9f9f9f;
+					margin-bottom: 32px;
+				}
+			}
+		}
+	}
+}

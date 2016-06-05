@@ -1,0 +1,103 @@
+///Stringify
+@import "type-check";
+
+$_style-map: (
+	map-start:'(' '{',
+	map-end:')' '}',
+	pair-separator:',' ';',
+	key-value-separator:':' ':',
+	list-start:'(' '[',
+	list-end:')' ']',
+	item-separator:',' ',',
+);
+
+$_tag-map: (
+	scss:1,
+	json:2
+);
+
+@function check-stringify-style($tag:scss) {
+	$check: check-string($tag);
+	@if not map-has-key($_tag-map,to-lower-case($tag)) {
+		@error 'no string style map available';
+	}
+	@return true;
+}
+
+@function get-stringify-style($tag:scss) {
+	$check: check-string($tag);
+	$type: map-get($_tag-map, to-lower-case($tag));
+	@if $type {
+		$style: ();
+		@each $key, $value in $_style-map {
+			$style: map-merge($style, ($key:nth($value, $type)));
+		}
+		@return $style;
+	}
+	@return null;
+}
+
+@function list-to-string($list,$separator:' ') {
+	$check: is-list($list);
+	$result: '';
+	@for $i from 1 through length($list) {
+		$result: $result+$separator+nth($list,$i);
+	}
+	$result: str-slice($result, 2);
+	@return $result;
+}
+
+@function map-to-string($map,$tag:scss) {
+	$check: check-map($map) check-string($tag) check-stringify-style($tag);
+
+	$style: get-stringify-style($tag);
+	$result: map-get($style, map-start);
+	@each $key, $value in $map {
+		$result: $result+$key+map-get($style,key-value-separator);
+		@if is-map($value) {
+			$result: $result+map-to-string($value,$tag);
+		} @else if is-list($value) {
+			$result: $result+list-to-string($value,$tag);
+		} @else {
+			$result: $result+$value;
+		}
+		$result: $result+map-get($style,pair-separator);
+	}
+	$result: $result+map-get($style,map-end);
+	@return quote($result);
+}
+
+@function str-split($str,$separator:' ') {
+	$check: check-string($str) check-string($separator);
+	$separator-length: str-length($separator);
+	$is-empty-separator: $separator-length==0;
+
+	$result: ();
+	@while str-length($str)>0 and str-index($str,$separator) {
+		$separator-index: str-index($str, $separator);
+		$separator-index: if($is-empty-separator, 2, $separator-index);
+		@if $separator-index>1 {
+			$item: str-slice($str, 1, $separator-index+-1);
+			@if $item {
+				$result: append($result, $item);
+			}
+		}
+		$str: str-slice($str, $separator-index+$separator-length);
+	}
+	@if $str {
+		$result: append($result, $str);
+	}
+	@return $result;
+}
+
+@function str-replace($str,$find,$replace,$greed:true) {
+	$check: check-string($str, $find, $replace) check-boolean($greed);
+	$str: str-split($str, $find);
+	$result: nth($str, 1);
+	@if length($str)>1 {
+		@for $i from 2 through length($str) {
+			$result: $result+if($greed or $i==2,$replace,$find)+nth($str,$i);
+		}
+	}
+	@return $result;
+}

@@ -1,0 +1,31 @@
+@import "../layout";
+
+#pager {
+	text-align: center;
+	@include t-relative-layout((padding:88px 0 20px,));
+
+	a {
+		display: inline-block;
+		color: #515151;
+		background: #ffffff;
+		@include t-relative-content-box((
+			font-size:14px,
+			line-height:32px,
+			padding:0 (32px+-14px)/2,
+			min-width:24px,
+			border:1px #d2d1cd solid,
+			border-radius:8px,
+		));
+		&:hover, &.pager-highlight {
+			background: #2ed5b9;
+			border-color: #2ed5b9;
+			color: #ffffff;
+		}
+	}
+
+	span {
+		color: #515151;
+
+	}
+
+}

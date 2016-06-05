@@ -1,0 +1,38 @@
+//String-Type
+@import "type-check";
+
+$_style-map: (
+	map-start:'(' '{',
+	map-end:')' '}',
+	pair-separator:',' ';',
+	key-value-separator:':' ':',
+	list-start:'(' '[',
+	list-end:')' ']',
+	item-separator:',' ',',
+);
+
+$_tag-map: (
+	scss:1,
+	json:2
+);
+
+@function check-string-style($tag:scss) {
+	$check: check-string($tag);
+	@if not map-has-key($_tag-map,to-lower-case($tag)) {
+		@error 'no string style map available';
+	}
+	@return true;
+}
+
+@function get-string-style($tag:scss) {
+	//  $check:check-string($tag);
+	$type: map-get($_tag-map, to-lower-case($tag));
+	@if $type {
+		$style: ();
+		@each $key, $value in $_style-map {
+			$style: map-merge($style, ($key:nth($value, $type)));
+		}
+		@return $style;
+	}
+	@return null;
+}

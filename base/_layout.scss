@@ -1,0 +1,60 @@
+///Layout
+@import "type-check";
+@import "layout-base";
+@import "scope-chain";
+
+//content-box
+@mixin t-content-box($self-layout) {
+	@include layout('content-box', $self-layout);
+}
+
+//padding-box
+@mixin t-padding-box($self-layout) {
+	@include layout('padding-box', $self-layout);
+}
+
+//border-box
+@mixin t-border-box($self-layout) {
+	@include layout('border-box', $self-layout);
+}
+
+//margin-box
+@mixin t-margin-box($self-layout) {
+	@include layout('margin-box', $self-layout);
+}
+
+//relative-content-box
+@mixin t-relative-content-box($self-layout) {
+	@include layout('relative-content-box', $self-layout);
+}
+
+//relative-padding-box
+@mixin t-relative-padding-box($self-layout) {
+	@include layout('relative-padding-box', $self-layout);
+}
+
+//relative-border-box
+@mixin t-relative-border-box($self-layout) {
+	@include layout('relative-border-box', $self-layout);
+}
+
+//relative-margin-box
+@mixin t-relative-margin-box($self-layout) {
+	@include layout('relative-margin-box', $self-layout);
+}
+
+@mixin t-relative-layout($self-layout) {
+	@include layout('relative-layout', $self-layout);
+}
+
+@mixin t-relative-box($self-layout) {
+	@include layout('relative-box', $self-layout);
+}
+
+@mixin t-relative-content-box($self-layout) {
+	@include layout('relative-content-box', $self-layout);
+}
+
+@mixin t-shape-box($self-layout) {
+	@include layout('shape-box', $self-layout);
+}

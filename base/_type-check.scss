@@ -1,0 +1,230 @@
+@import "constants";
+@import "arguments";
+
+//Type Check
+
+//list of type
+$type-list: number string color bool list map;
+//type check of single variables
+@function _is-certain-type($var, $n:1) {
+	@return type-of($var) == nth($type-list, $n);
+}
+
+//type check of some variables
+@function _is-type($n, $vars...) {
+	@each $var in $vars {
+		@if not _is-certain-type($var, $n) {
+			@return false;
+		}
+	}
+	@return true;
+}
+
+//certain type check of some variables
+@function is-number($vars...) {
+	@return _is-type(1, $vars...);
+}
+
+@function is-string($vars...) {
+	@return _is-type(2, $vars...);
+}
+
+@function is-color($vars...) {
+	@return _is-type(3, $vars...);
+}
+
+@function is-boolean($vars...) {
+	@return _is-type(4, $vars...);
+}
+
+@function is-list($vars...) {
+	@return _is-type(5, $vars...);
+}
+
+@function is-map($vars...) {
+	@return _is-type(6, $vars...);
+}
+
+@function is-table($vars...) {
+	@if not is-map($vars...) {
+		@return false;
+	}
+	@each $var in $vars {
+		@if not is-list(map-get($var,'content')) {
+			@return false;
+		}
+		@if not is-map(map-get($var,'transpose-content')) and map-get($var,'transpose-content')!=() {
+			@return false;
+		}
+		@if not is-number(map-get($var,'size')) {
+			@return false;
+		}
+		@if map-get($var,'state')!='normal' and map-get($var,'state')!='transpose' {
+			@return false;
+		}
+		@if not is-boolean(map-get($var,'modified')) {
+			@return false;
+		}
+		@if not is-map(map-get($var,'info')) {
+			@return false;
+		}
+	}
+	@return true;
+}
+
+@function is-empty-list($vars...) {
+	@each $var in $vars {
+		@if not (is-list($var) and length($var)==0) {
+			@return false;
+		}
+	}
+	@return true;
+}
+
+@function is-non-empty-list($vars...) {
+	@each $var in $vars {
+		@if not (is-list($var) and length($var)>0) {
+			@return false;
+		}
+	}
+	@return true;
+}
+
+//check type
+@function _check-type($n,$vars...) {
+	@each $var in $vars {
+		@if not _is-certain-type($var, $n) {
+			@error 'Invalid type of #{inspect($var)}. Parameters of #{inspect(nth($type-list,$n))} type required.';
+		}
+	}
+	@return true;
+}
+
+@function check-number($vars...) {
+	@return _check-type(1, $vars...);
+}
+
+@function check-string($vars...) {
+	@return _check-type(2, $vars...);
+}
+
+@function check-color($vars...) {
+	@return _check-type(3, $vars...);
+}
+
+@function check-boolean($vars...) {
+	@return _check-type(4, $vars...);
+}
+
+@function check-list($vars...) {
+	@return _check-type(5, $vars...);
+}
+
+@function check-map($vars...) {
+	@return _check-type(6, $vars...);
+}
+
+@function check-table($vars...) {
+	@if not is-table($vars...) {
+		@each $var in $vars {
+			@error 'Invalid type of #{inspect($var)}. Parameters of table type required.';
+		}
+	}
+	@return true;
+}
+
+@function check-function-exist($functions...) {
+	$check: true;
+	@each $function in $functions {
+		@if not function-exists($function) {
+			@error 'function #{$function}() does not exist.';
+		}
+	}
+	@return true;
+}
+
+//check type and warn
+@function _check-type-and-warn($n,$var,$warn:false) {
+	@if not _is-certain-type($var, $n) {
+		@if $warn {
+			@warn 'Dreprecated type of #{inspect($var)}. Parameters of #{inspect(nth($type-list,$n))} type recommended.';
+		}
+		@return false;
+	}
+	@return true;
+}
+
+@function check-number-and-warn($var,$warn:false) {
+	@return _check-type-and-warn(1, $var, $warn);
+}
+
+@function check-string-and-warn($var,$warn:false) {
+	@return _check-type-and-warn(2, $var, $warn);
+}
+
+@function check-color-and-warn($var,$warn:false) {
+	@return _check-type-and-warn(3, $var, $warn);
+}
+
+@function check-boolean-and-warn($var,$warn:false) {
+	@return _check-type-and-warn(4, $var, $warn);
+}
+
+@function check-list-and-warn($var,$warn:false) {
+	@return _check-type-and-warn(5, $var, $warn);
+}
+
+@function check-map-and-warn($var,$warn:false) {
+	@return _check-type-and-warn(6, $var, $warn);
+}
+
+//check multiple type
+@function check-multiple-type($var,$types...) {
+	$check: false;
+	$types: args-unzip($types...);
+	@each $type in $types {
+		@if check-string($type) and index($type-list,to-lower-case($type)) and
+    call('is-#{to-lower-case($type)}',$var) {
+			$check: true;
+		}
+	}
+	@if not $check {
+		@error '#{$var} is not type of one of the (#{inspect($types)})';
+	}
+	@return true;
+}
+
+//@function is-amid($var,$interval,$interval-type:1,$lower:$NEGATIVE_INFINITY,$higher:$POSITIVE_INFINITY){
+//  $check:check-number($var);
+//  $interval:if(is-list($interval),$interval,append((),$interval));
+//  $lower:nth($)
+//  $min:min($lower,$higher);
+//  $max:max($lower,$higher);
+//  @if $var>=$min and $var<=$max{
+//    @if $interval-type==$OPEN_INTERVAL and $var==$min or $var==$max{
+//      @return false;
+//    }
+//    @if $interval-type==$LEFT_OPEN_INTERVAL and $var==$min{
+//      @return false;
+//    }
+//    @if $interval-type==$LEFT_CLOSE_INTERVAL and $var==$max{
+//      @return false;
+//    }
+//    @return true;
+//  }
+//  @return false;
+//}
+
+//determine if the variables is a number with given unit
+@function has-unit($var,$unit:px) {
+	@return is-number($var) and unit($var)==$unit;
+}
+
+//check local scope
+@function check-local-scope() {
+	@if not & {
+		@error 'could not work in global scope';
+	}
+	//  @warn '#{&}';
+	@return true;
+}

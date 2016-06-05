@@ -1,0 +1,518 @@
+@charset "utf-8";
+
+@import "type-check";
+@import "type-conversion";
+@import "list";
+@import "map";
+@import "base-fn";
+@import "reset";
+
+body {
+	width: 100%;
+	font-family: "微软雅黑", Verdana, Geneva, sans-serif;
+	font-size: 1em;
+}
+
+.trailing {
+	margin-right: 0;
+	padding-right: 0;
+}
+
+.circle {
+	-moz-border-radius: 50%;
+	-webkit-border-radiu: 50%;
+	border-radius: 50%;
+}
+
+strong {
+	color: #00be8f;
+	font-weight: normal;
+}
+
+audio {
+	width: 0;
+	height: 0;
+	display: none;
+}
+
+$font: 32px;
+$r_url: "../../w_img/plaza/";
+$png: ".png";
+$max_width: 640px !default;
+
+//header
+#header {
+	@include container;
+	$width: $max_width;
+	//  max-width: $max_width;
+	background: #5c8859 url($r_url + banner + $png) center repeat-x;
+	background-size: cover;
+	padding-bottom: rel(256px, $width);
+
+	@media screen and (min-width: 641px) {
+		height: 256px;
+		padding-bottom: 0;
+	}
+
+	@at-root #header_content {
+		@include container;
+		max-width: $max_width;
+		padding-bottom: rel(256px, $width);
+
+
+		@media screen and (min-width: 641px) {
+			height: 256px;
+			padding-bottom: 0;
+		}
+
+		@at-root {
+			#logo_header {
+				float: left;
+				margin: rel((24px 14px 50px 24px), $width);
+			}
+
+			#logo_txt {
+				float: left;
+				$margin-top: 24px+(90px-85px)/2;
+				margin-top: rel(24px+(106px-85px)/2, $width);
+				margin-bottom: rel(88px+42px+-85px+-$margin-top, $width);
+				font-size: rel(20px, $font, 1em);
+				color: #ffffff;
+
+				.cn_name {
+					font-size: rel(44px, 20px, 1em);
+				}
+			}
+
+			#slogan {
+				float: right;
+				margin: rel((42px, 42px, 0px, 0px), $width);
+			}
+		}
+
+		a {
+			display: block;
+			width: rel(178px, $width);
+			padding-bottom: rel(60px, $width);
+			float: right;
+			vertical-align: middle;
+			margin-top: rel(28px, $width);
+			margin-right: rel(82px, $width);
+
+			&#button_header {
+				background: url($r_url + "m/start_mobile_1" + $png) center no-repeat;
+				background-size: contain;
+			}
+		}
+	}
+
+	.top_background {
+		width: 100%;
+		padding-bottom: rel(492px, $width);
+		background: #f9faf7;
+
+		@media screen and (min-width: 641px) {
+			height: 492px;
+			padding-bottom: 0;
+		}
+	}
+}
+
+.subtitle {
+	font-size: rel(24px, $font, 1em);
+	color: #404040;
+}
+
+//body
+#body {
+	$width: $max_width;
+	$padding: 32px;
+	width: auto;
+	padding-left: rel($padding, $width);
+	padding-right: rel($padding, $width);
+
+	@at-root {
+		$parent-width1: $max_width - 2*$padding;
+		$parent1: (width:$parent-width1, font-size:$font);
+
+		#body_content {
+			width: 100%;
+			max-width: $parent-width1;
+			margin: 0 auto;
+		}
+
+		//intro
+		#intro {
+			width: 100%;
+			//      padding-bottom:rel(160px, $width);
+			margin-bottom: rel(32px, $width);
+
+			.illustration {
+				float: left;
+				@include relative-content-box((
+					margin:-76px 20px 30px 0,
+					font-size:$font,
+					//                border-width:8px
+				), $parent1);
+				border: rel(8px, $font, 1em) solid #ffffff;
+				margin: rel((-76px, 20px, 30px, 0), $parent-width1);
+				//        border:8px solid #ffffff;
+			}
+
+			.title {
+				$width2: $parent-width1+-224px-20px-16px-110px+32px-10px;
+				@include relative-content-box((
+					width:$width2,
+					margin-right:-32px,
+					padding-top:32px,
+					font-size:34px,
+					line-count:1
+				), $parent1);
+				white-space: nowrap;
+				color: #606060;
+
+				.info {
+					@include relative-content-box((
+						font-size:16px,
+						line-count:3
+					), $parent1);
+					word-break: break-all;
+				}
+				//        @include ellipsis;
+			}
+
+			.favour {
+				@include relative-content-box((
+					line-height:38px,
+					width:110px,
+					margin-top:-38px,
+					font-size:20px,
+					letter-count:5
+				), $parent1);
+				display: inline-block;
+				float: right;
+				vertical-align: middle;
+				background-color: #00be8f;
+				text-align: center;
+				color: #ffffff;
+			}
+
+			@at-root {
+				#owner {
+					@include relative-content-box((
+						margin-top:24px,
+						font-size:24px,
+						line-count:1
+					), $parent1);
+					color: #808080;
+				}
+
+				#plaza_id {
+					@include relative-content-box((
+						margin-top:16px,
+						font-size:24px,
+						line-count:1
+					), $parent1);
+					color: #808080;
+				}
+
+				#briefs {
+					width: 100%;
+					@include relative-content-box((
+						margin-top:30px,
+						font-size:24px,
+						line-padding:14px,
+						line-count:3
+					), $parent1);
+					word-break: break-all;
+					color: #808080;
+					//          @include relBox((margin-top:23px,),)
+				}
+			}
+		}
+
+		//content
+		#content {
+			@at-root {
+				//online
+				#online {
+					margin-bottom: rel(24px, $parent-width1);
+
+					.online_avatar {
+						display: inline-block;
+						width: rel(80px, $parent-width1);
+						height: 0;
+						padding-bottom: rel(80px, $parent-width1);
+						margin: rel((24px, 20px, 24px, 0), $parent-width1);
+						font-size: 0;
+						overflow: hidden;
+					}
+					.trailing {
+						margin-right: 0;
+					}
+				}
+
+				//album
+				#album {
+					margin-bottom: rel(54px, $parent-width1);
+
+					.subcontent {
+						font-size: 0;
+
+						.album_photo {
+							display: inline-block;
+							@include relative-content-box((
+								width:176px,
+								padding-bottom:176px,
+								//                      margin:(24px 18px 0 0),
+								font-size:0
+							), $parent1);
+							margin: rel((24px 18px 0 0), $parent-width1);
+							height: 0;
+							overflow: hidden;
+						}
+						.trailing {
+							margin-right: 0;
+						}
+					}
+				}
+
+				//chronicle
+				#chronicle {
+					margin-bottom: rel(24px, $parent-width1);
+
+					.subcontent > li:first-child {
+						margin-top: rel(24px, $parent-width1);
+					}
+
+					.day {
+						@include relative-content-box((width:80px, line-height:32px, font-size:18px), $parent1);
+						text-align: center;
+						background-color: #eff0f1;
+						color: #808080;
+					}
+					.dairy {
+						$parent-width2: $parent-width1+-40px-1px;
+						$parent2: (width:$parent-width2, font-size:$font);
+
+						.notation {
+							@include relative-box((margin-left:40px, padding-top:32px, padding-bottom:48px), $parent1);
+							border-left: 1px #d4d9dc solid;
+
+							.user_avatar {
+								float: left;
+								margin-left: rel(-32px, $parent-width2);
+								margin-right: rel(24px, $parent-width2);
+							}
+
+							.user_info {
+								width: 100%;
+								@include relative-content-box((line-height:64 px-22px, margin-bottom:2px, font-size:28px), $parent2);
+								color: #404040;
+
+								$parent3: (width:$parent-width2, font-size:28px);
+								.gender_label {
+									display: inline-block;
+									@include relative-content-box((
+										width:48px,
+										line-height:22px,
+										margin-left:8px,
+										font-size:16px,
+										border-radius:4px,
+										letter-count:3
+									), $parent3);
+									text-align: center;
+									vertical-align: middle;
+									color: #ffffff;
+								}
+
+								.male_label {
+									background-color: #2fd5b9;
+								}
+
+								.female_label {
+									background-color: #ff9fa8;
+								}
+							}
+
+							$parent-width3: $parent-width2 - 56px;
+							$parent3: (width:$parent-width3, font-size:$font);
+							.notation_body {
+								margin-left: rel(56px, $parent-width2);
+
+								p {
+									position: relative;
+
+									&.message-ellipsis {
+										font-size: rel(24px, $parent3, 1em);
+										max-height: rel((8px+24px+3*(16px+24px)), 24px, 1em);
+										overflow: hidden;
+										word-break: break-all;
+									}
+
+									$parent4: (width:$parent-width3, font-size:24px);
+
+									.strong {
+										display: inline-block;
+										vertical-align: top;
+										//                    vertical-align: text-bottom;
+										@include relative-content-box((
+											font-size:24px,
+											line-height:40px,
+											line-count:1
+										), $parent4);
+										max-width: 100%;
+										white-space: nowrap;
+										color: #606060;
+									}
+
+									.text {
+										@include relative-content-box((
+											line-padding:16px,
+											font-size:24px,
+											line-count:3
+										), $parent4);
+										word-break: break-all;
+										color: #808080;
+									}
+
+									.dairy_photo {
+										margin-top: rel(12px, $parent-width3);
+										margin-right: rel(20px, $parent-width3);
+									}
+
+									.new_tag {
+										position: absolute;
+										left: 0;
+										top: rel(36px, $parent-width3);
+									}
+
+									.avatar_change {
+										margin-right: rel(20px, $parent-width3);
+									}
+								}
+
+								.audio {
+									margin-top: rel(16px, $parent3, 1em);
+									width: rel(120px, $parent3);
+									font-family: SimHei, Helvetica, Arial, sans-serif;
+
+									.audio-shape {
+										@include relative-content-box((
+											line-height:60px,
+											font-size:22px,
+											border-radius:30px,
+											letter-count:4
+										), $parent3);
+										width: rel(120px+-10px, 22px, 1em);
+										padding-right: rel(10px, 22px, 1em);
+										background-color: #00be8f;
+										cursor: pointer;
+										text-align: right;
+										color: #ffffff;
+
+										@each $key in pause stop play {
+											&.#{$key} {
+												background: #00be8f url($r_url + 'new-' + $key + '.png') rel(22px, 22px, 1em) no-repeat;
+												background-size: 1em;
+											}
+										}
+									}
+								}
+							}
+
+							.starting_point {
+								float: left;
+								@include relative-content-box((
+									width:64px,
+									line-height:64px,
+									margin-left:-32px,
+									margin-right:32px,
+									font-size:24px
+								), $parent2);
+								text-align: center;
+								color: #d4d9dc;
+							}
+
+							.inception_info {
+								position: relative;
+								@include relative-content-box((
+									width:220px,
+									line-height:72px,
+									margin-left:50px,
+									padding:0 10px,
+									font-size:24px
+								), $parent3);
+								background: url($r_url + "m/info.png") left center no-repeat;
+								background-size: contain;
+								padding-left: 1.9em;
+								color: #404040;
+							}
+						}
+
+						.last {
+							height: 0;
+							padding-bottom: rel(64px/2, $parent-width2);
+							margin-bottom: rel(96px, $parent-width2);
+						}
+					}
+				}
+			}
+		}
+
+	}
+}
+
+//footer
+#footer {
+	width: 100%;
+	position: relative;
+	background-color: #f9faf7;
+
+	@at-root {
+		#footer_content {
+			width: 100%;
+			max-width: $max_width;
+			height: 0;
+			margin: 0 auto;
+			position: relative;
+			padding-bottom: rel(144px, $max_width);
+
+			@media screen and (min-width: 641px) {
+				height: 144px;
+				padding-bottom: 0;
+			}
+		}
+
+		#logo_footer {
+			float: left;
+			margin: rel(((144px-106px)/2, 14px, 0, 24px), $max_width);
+		}
+
+		#logo_footer_txt {
+			float: left;
+			margin-top: rel(34px, $max_width);
+			margin-left: rel(10px, $max_width);
+			font-size: rel(20px, $font, 1em);
+			color: #606060;
+
+			span {
+				font-size: rel(38px, 20px, 1em);
+			}
+		}
+	}
+
+	a {
+		display: block;
+		width: rel(178px, $max_width);
+		padding-bottom: rel(60px, $max_width);
+		position: absolute;
+		top: rel(44px, 144px);
+		right: rel(44px, $max_width);
+
+		&#button_footer {
+			background: url($r_url + "m/start_mobile_2.png") center no-repeat;
+			background-size: contain;
+		}
+	}
+}

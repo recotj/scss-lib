@@ -1,0 +1,105 @@
+@import "type-check";
+@import "type-conversion";
+@import "list";
+@import "map";
+
+//background-position
+$_position: (
+	t:top, tp:top, top:top,
+	b:bottom, bt:bottom, bot:bottom, btm:bottom, bottom:bottom,
+	c:center, cen:center, ctr:center, center:center,
+	l:left, lt:left, lft:left, left:left,
+	r:right, rt:right, rgt:right, right:right
+);
+@function _pos($pos:center) {
+	@return selectKey($_position, $pos, center);
+}
+
+@function pos($pos:center center) {
+	@if is-list($pos) {
+		//if an item of $pos is a number, then return its original value, else process it as a position string and
+		//return the processed result
+		$pos-x: processSelectedItemByFilter($pos, 1, isNumber, get, _pos, center);
+		$pos-y: processSelectedItemByFilter($pos, 2, isNumber, get, _pos, center);
+		@return ($pos-x $pos-y);
+	}
+	$pos: if(is-number($pos), $pos, _pos($pos));
+	@return ($pos center);
+}
+
+//background-repeat
+$_repeat: (
+	0:no-repeat, n:no-repeat, no:no-repeat, norepeat:no-repeat, no-repeat:no-repeat,
+	1:repeat-x, x:repeat-x, repeatx:repeat-x, repeat-x:repeat-x,
+	2:repeat-y, y:repeat-y, repeaty:repeat-y, repeat-y:repeat-y,
+	3:repeat, all:repeat, both:repeat, repeat:repeat
+);
+@function rep($rep:no-repeat) {
+	@return selectKey($_repeat, $rep, no-repeat);
+}
+
+//background-size
+$_size: (
+	cv:cover, cvr:cover, cov:cover, cover:cover,
+	cn:contain, ctn:contain, con:contain, contain:contain
+);
+@function _size($size:contain) {
+	@return selectKey($_size, $size, contain);
+}
+
+@function size($size:contain) {
+	@if is-list($size) {
+		//if an item of $pos is a number, then return its original value, else process it as a position string and
+		//return the processed result
+		$size-x: processSelectedItemByFilter($size, 1, isNumber, get, _size, contain);
+		$size-y: processSelectedItemByFilter($size, 2, isNumber, get, _size, contain);
+		@return ($size-x $size-y);
+	} @else if is-number($size) {
+		@return $size;
+	}
+	$size: if(is-number($size), $size, _size($size));
+	@return $size;
+}
+
+//set background property
+//background:color,url,size,repeat,attachment;
+@mixin bg($color:"",$url:"",$position:center,$size:contain,$repeat:"",$attachment:"") {
+	$background: ();
+	//set background-color
+	@if $color!="" {
+		$background: append($background, $color);
+	}
+	//set background-image and other background properties related to background-image
+	@if $url!="" {
+		//set background-image
+		$background: append($background, url(#{$url}));
+		//set background-position
+		$position: pos($position);
+		@if $position!=(0 0) and $position!=(0% 0%) {
+			$background: append($background, $position);
+		}
+		//set background-size
+		$size: size($size);
+		@if $url!="" and $size!=contain and $size!=cover {
+			$background: append($background, $size);
+		}
+		//set background-repeat
+		@if $repeat!="" {
+			$background: append($background, rep($repeat));
+		}
+		//set background-attachment
+		@if $attachment!="" {
+			$attachment: if($attachment==scroll or $attachment==srcl or $attachment==s, scroll, fixed);
+			$background: append($background, $attachment);
+		}
+	}
+	@if length($background)>0 {
+		background: $background;
+		@if $url!="" and ($size==contain or $size==cover) {
+			background-size: $size;
+			//in case of some legacy browsers like IE6,7,8 with no support for background-size:contain/cover
+			filter: progid:DXImageTransform.Microsoft.AlphaImageLoader(
+					src="#{$url}", sizingMethod="scale");
+		}
+	}
+}

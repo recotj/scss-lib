@@ -1,0 +1,244 @@
+//List Operation
+@import 'type-check';
+@import 'type-conversion';
+@import "math";
+
+@function list-in-bounds($list,$index,$ignore-zero:false) {
+	$check: check-list($list) check-number($index);
+	@if $index<=0 or $index>length($list) {
+		@if not ($index==0 and $ignore-zero) {
+			@error 'out of bounds of (#{inspect($list)}) as invalid $index:#{$index}';
+		}
+	}
+	@return true;
+}
+
+@function list-test($list,$item-list,$filter:index,$greed:false,$args...) {
+	//check whether parameters: $list, $filter are in valid type.
+	$check: check-list($list) check-function-exist($filter);
+	//check whether parameters: $greed, $item-list are in valid type. If invalid, give out warnings and convert them into
+	//the required type.
+	$greed: to-boolean($greed, true);
+	$item-list: to-list($item-list, true);
+	//check whether $item-list is an empty list. If so, assign it a reference of $list, which means we only test the $list
+	//itself regardless of the candidate list: $item-list.
+	$items: if($item-list==(), $list, $item-list);
+	$result: $greed;
+	@each $item in $items {
+		@if $greed {
+			@if not to-boolean(call($filter,$list,$item,$args...)) {
+				@return false;
+			}
+		} @else {
+			@if to-boolean(call($filter, $list, $item, $args...)) {
+				@return true;
+			}
+		}
+	}
+	@return $result;
+}
+
+@function _list-get($list,$item) {
+	@return $item;
+}
+
+@function list-match($list,$item-list,$default:null,$filter:index,$process:_list-get,$greed:false,$args...) {
+	//check whether parameters: $list, $filter are in valid type.
+	$check: check-list($list) check-function-exist($filter);
+	//check whether parameters: $greed, $item-list are in valid type. If invalid, give out warnings and convert them into
+	//the required type.
+	$greed: to-boolean($greed, true);
+	$item-list: to-list($item-list, true);
+	//check whether $item-list is an empty list. If so, assign it a reference of $list, which means we only test the $list
+	//itself regardless of the candidate list: $item-list.
+	$items: if($item-list==(), $list, $item-list);
+	$result: ();
+	@each $item in $items {
+		@if to-boolean(call($filter, $list, $item, $args...)) {
+			$result-item: call($process, $list, $item);
+			@if $greed {
+				$result: append($result, $result-item);
+			} @else {
+				@return $result-item;
+			}
+		}
+	}
+	//check whether nothing matches.
+	@return if($result!=(), $result, $default);
+}
+
+@function list-min($list,$return-index:false,$abs-value:false,$ignore-zero:false) {
+	$check: check-list($list);
+	$original-list: $list;
+	@if $abs-value {
+		@each $item in $list {
+			$list: set-nth($list, index($list, $item), abs($item));
+		}
+	}
+	$min: $POSITIVE_INFINITY;
+	@each $item in $list {
+		@if not ($ignore-zero and $item==0) {
+			$min: min($min, $item);
+		}
+	}
+	$index: index($list, $min);
+	@return if($return-index, $index, nth($original-list, $index));
+}
+
+//@function list-max($list,$return-index:false,$abs-value:false,$ignore-zero:false){
+//  $check:check-list($list);
+//  $original-list:$list;
+//  @if $abs-value{
+//    @each $item in $list{
+//      $list:set-nth($list,index($list,$item),abs($item));
+//    }
+//  }
+//  $max:$POSITIVE_INFINITY;
+//  @each $item in $list{
+//    @if not ($ignore-zero and $item==0){
+//      $max:max($max,$item);
+//    }
+//  }
+//  $index:index($list,$max);
+//  @return if($return-index,$index,nth($original-list,$index));
+//}
+
+@function list-swap($list,$index1,$index2) {
+	$check: check-list($list) check-number($index1, $index2);
+	$temp: nth($list, $index1);
+	$list: set-nth($list, $index1, nth($list, $index2));
+	$list: set-nth($list, $index2, $temp);
+	@return $list;
+}
+
+@function list-bubble-sort($list,$ascend:true) {
+	$list: to-list($list);
+	$length: length($list);
+	@for $i from 1 through $length+-1 {
+		//    $test:true;
+		@for $j from 1 through $length+-$i {
+			@if $ascend == (nth($list,$j)>nth($list,$j+1)) {
+				$list: list-swap($list, $j, $j+1);
+				//        $test:false;
+			}
+		}
+		//    @if $test{
+		//      @return $list;
+		//    }
+	}
+	@return $list;
+}
+
+@function list-slice($list,$start:1,$end:-1) {
+	$check: check-list($list) check-number($start, $end);
+	@if length($list)==0 {
+		@return $list;
+	}
+	$start: if($start>=0, $start, length($list)+$start+1);
+	$end: if($end>=0, $end, length($list)+$end+1);
+	$check: list-in-bounds($list, $start, true) list-in-bounds($list, $end, true);
+	//  $end:if($end==0,length($list),$end);
+	$result: ();
+	@if $start>0 and $end>0 {
+		@for $i from $start through $end {
+			$result: append($result, nth($list, $i));
+		}
+	}
+	@return $result;
+}
+
+@function list-insert($list,$item,$n:-1,$join:false) {
+	$check: check-list($list) check-number($n);
+	$first-part: append(list-slice($list, 1, if($n>0, $n+-1, $n)), if($n!=0, $item, ()));
+	@if $join and is-list($item) {
+		$first-part: join(list-slice($list, 1, if($n>0, $n+-1, $n)), if($n!=0, $item, ()));
+	}
+	$last-part: list-slice($list, if($n>0, $n, $n+1));
+	@return join($first-part, $last-part);
+}
+
+@function list-remove($list,$start:-1,$end:0) {
+	$check: check-list($list) check-number($start, $end);
+	$first-part: list-slice($list, 1, $start+-1);
+	$last-part: list-slice($list, if($end==0, $start+1, $end+1));
+	@return join($first-part, $last-part);
+}
+
+@function list-resize($list,$size:-1,$default:null,$list-unzip:false) {
+	$check: check-list($list) check-number($size);
+	$length: length($list);
+	$size: if($size<0, $length, $size);
+	@if $size>$length {
+		@if $list-unzip and is-list($default) {
+			$list: join($list, list-slice($default, length($list)+1, $size))
+		} @else {
+			@for $i from $length+1 through $size {
+				$list: append($list, $default or nth($list,mod-none-zero($i,$length)));
+			}
+		}
+	} @else {
+		$list: list-slice($list, 1, $size);
+	}
+	@return $list;
+}
+
+@function list-sort($list,$sort-field,$compare) {
+
+}
+
+//useless
+@function list-combine-to-map($list1,$list2) {
+	$check: check-list($list1, $list2);
+	$length: min(length($list1), length($list2));
+	$result: ();
+	@for $i from 1 through $length {
+		$result: map-merge($result, (nth($list1, $i):nth($list2, $i)));
+	}
+	@return $result;
+}
+
+@function list-test-all($list,$filter,$args...) {
+	@return list-test($list, (), $filter, true, $args...);
+}
+
+@function list-test-some($list,$filter,$args...) {
+	@return list-test($list, (), $filter, false, $args...);
+}
+
+@function _list-item-has-unit($list,$item,$unit:px) {
+	@return index($list,$item) and has-unit($item,$unit);
+}
+
+@function _list-item-has-unit-by-index($list,$index,$unit:px) {
+	@return list-in-bounds($list,$index) and has-unit(nth($list,$index),$unit);
+}
+
+@function list-select-item-by-index($list,$index-list,$greed:false,$default:null) {
+	@return list-match($list, $index-list, $default, list-in-bounds, nth, $greed);
+}
+
+@function list-select-item-with-unit-by-index($list,$index-list,$unit:px,$greed:false,$default:null) {
+	@return list-match($list, $index-list, $default, _list-item-has-unit, nth, $greed, $unit);
+}
+
+@function list-filter-items($list,$default,$filter,$args...) {
+	@return list-match($list, (), $default, $filter, _list-get, true, $args...);
+}
+
+@function list-select-item-with-unit($list,$unit:px,$default:null) {
+	@return list-filter-items($list, $default, _list-item-has-unit, $unit);
+}
+
+@function _list-item-types($list,$item) {
+	@return type-of($item);
+}
+
+@function list-process($list,$process:_list-get,$args...) {
+	@return list-match($list, (), null, index, $process, true, $args...);
+}
+
+@function list-types($list) {
+	@return list-process($list, _list-item-types);
+}
+
+

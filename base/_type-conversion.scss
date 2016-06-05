@@ -1,0 +1,107 @@
+//Type Conversion
+@import "type-check";
+@import "constants";
+@import "math";
+
+@function get($var,$type:false) {
+	@if not $type {
+		@return $var;
+	}
+}
+
+@function to-boolean($var,$warn:false) {
+	@if check-boolean-and-warn($var, $warn) {
+		@return $var;
+	}
+	@each $item in (() false null 0 '' #000000) {
+		@if $var==$item {
+			@return false;
+		}
+	}
+	@return true;
+}
+
+@function to-number($var,$warn:false) {
+	@if check-number-and-warn($var, $warn) {
+		@return $var;
+	}
+	@if $var==true {
+		@return 1;
+	}
+	@if not to-boolean($var) {
+		@return 0;
+	}
+	//convert string to number
+	$dec-digits: '1' '2' '3' '4' '5' '6' '7' '8' '9' '0';
+	$hex-digits: '1' '2' '3' '4' '5' '6' '7' '8' '9' 'a' 'b' 'c' 'd' 'e' 'f' '0';
+	@if is-string($var) {
+		$var: to-lower-case($var);
+		$check: false;
+		$sign: 1;
+		$result: 0;
+		$digits: $dec-digits;
+		//deal with negative numbers.
+		@if str-index($var,'-')==1 {
+			$sign: -1;
+			$var: str-slice($var, 2);
+		}
+		//deal with hexadecimal numbers.
+		@if str-index($var,'0x')==1 {
+			$var: str-slice($var, 3);
+			$digits: $hex-digits;
+		}
+		@for $i from 1 through str-length($var) {
+			$index: index($digits, str-slice($var, $i, $i));
+			$base: length($digits);
+			@if $index {
+				$result: $base*$result+mod($index,$base);
+				$check: true;
+			} @else {
+				@return $check and $result;
+			}
+		}
+		@return $sign*$result;
+	}
+	//convert color to number
+	@if is-color($var) {
+		$result: 0;
+		@each $fn in 'red' 'green' 'blue' {
+			$result: 256*$result+call($fn,$var);
+		}
+		@return $result;
+	}
+	@return false;
+}
+
+@function to-color($var,$warn:false) {
+	@if check-color-and-warn($var, $warn) {
+		@return $var;
+	}
+	@if not to-boolean($var) {
+		@return #000000;
+	}
+	@if is-string($var) {
+		@if index($COLORS, $var) {
+			@return $var;
+		}
+	}
+	@return false;
+}
+
+@function to-string($var) {
+	@return if(is-string($var), $var, inspect($var));
+}
+
+@function to-list($var,$warn:false) {
+	@if check-list-and-warn($var, $warn) {
+		@return $var;
+	}
+	@if is-map($var) {
+		@return map-keys($var);
+	}
+	//parens are not what define lists; it’s the delimiter (commas/spaces)
+	//see http://hugogiraudel.com/2013/11/28/sass-brainfuck/
+	//type-of(($var)) == type-of($var);
+	//type-of(append((),$var)) == list
+	@return append((), $var);
+}

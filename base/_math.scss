@@ -1,0 +1,12 @@
+//math utils
+@import "type-check";
+
+@function mod($origin,$mod) {
+	$check: check-number($origin, $mod);
+	@return $origin+-$mod*floor($origin/$mod);
+}
+
+@function mod-none-zero($origin,$mod) {
+	$result: mod($origin, $mod);
+	@return if($result==0, $mod, $result);
+}

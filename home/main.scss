@@ -1,0 +1,92 @@
+@import "../reset";
+@import "../math";
+@import "header";
+
+#header {
+	@at-root {
+		#header-navigate {
+			float: right;
+			li {
+				background: #2ed5b9;
+				color: #ffffff;
+
+				&:nth-child(1) {
+					background: #ffffff;
+					color: #01be9e;
+				}
+			}
+		}
+
+		#header-download {
+			display: none;
+		}
+	}
+}
+
+#body {
+	@at-root {
+		#body-content {
+			width: 100%;
+			background: #2ed5b9;
+			@at-root {
+				#liao-header {
+					position: relative;
+					width: 1264px;
+					height: 580px;
+					margin: 0 auto;
+					background: #2ed5b9 url($img-directory + 'home/banner-bg.png') right top no-repeat;
+
+					@at-root #liao-download {
+						position: absolute;
+						right: 0;
+						bottom: 64px;
+						width: 560px;
+
+						#liao-download-buttons {
+							float: left;
+							margin-right: 40px;
+							li a {
+								display: block;
+								width: 268px;
+								height: 72px;
+								border-radius: 36px;
+								margin-bottom: 26px;
+
+								font-size: 30px;
+								line-height: 72px;
+								text-align: center;
+								background: #ffffff;
+								color: #333333;
+								box-shadow: 0 1px #000000;
+								//                a{
+								//                  display: block;
+								//                  width:100%;
+								//                  height:100%;
+								//                }
+
+							}
+						}
+					}
+				}
+
+				#liao-features {
+					li {
+						height: 563px;
+						//            max-width: 1264px;
+						//            margin:0 auto;
+
+						@for $i from 1 through 6 {
+							&.main-img-#{$i} {
+								background: nth((#eff0e6, #f8f8ef), mod-none-zero($i, 2)) url($img-directory +'home/main-img'+ $i +'.png') center no-repeat;
+								background-size: contain;
+
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+@import "footer";

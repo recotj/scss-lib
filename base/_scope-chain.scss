@@ -1,0 +1,73 @@
+///Scope Chain
+@import "type-check";
+@import "type-conversion";
+@import "constants";
+@import "stringify";
+@import "new-list";
+@import "new-map";
+//@import "base-fn";
+@import "layout-base";
+
+@function init-global-layout($layout) {
+	$check: check-map($layout);
+	@if not $global-used {
+		$layout: map-select-pairs-with-unit($layout, $global, 'px', $global);
+		$global: map-merge($global, $layout) !global;
+	}
+	@return true;
+}
+
+$layout-mixin-list: (
+	'content-box' 'padding-box' 'border-box' 'margin-box' 'relative-content-box' 'relative-padding-box' 'relative-border-box' 'relative-margin-box' //        'relative' 'relative-layout' 'relative-box'  'shape-box'
+);
+
+@function create-scopes-if-not-exists() {
+	@if not global-variable-exists(scope-chain) {
+		$scope-chain: (global:$global) !global;
+		$global-used: true !global;
+	}
+	@return true;
+}
+
+@function get-ancestor($selector) {
+	$check: check-local-scope() check-list($selector) create-scopes-if-not-exists();
+
+	@while length($selector)>1 {
+		$selector: list-slice($selector, 1, -2);
+		@warn '$ancestors of #{to-string($selector)} in get-ancestor: #{to-string($selector)}';
+		$ancestor: map-get($scope-chain, list-to-string($selector));
+		@if $ancestor {
+			@return $ancestor;
+		}
+	}
+
+	@return map-get($scope-chain, 'global');
+}
+
+//@function relative($self-layout){
+//  $check: check-map($self-layout) check-local-scope();
+//}
+
+@mixin layout($layout-mixin,$self-layout) {
+	$check: check-string($layout-mixin) check-map($self-layout) check-local-scope();
+
+	@if index($layout-mixin-list, $layout-mixin) {
+		$selector: nth(&, 1);
+		$ancestor: get-ancestor($selector);
+		@warn '$ancestor of #{$selector}: #{to-string(nth($scope-chain,index(map-values($scope-chain),$ancestor)))}';
+		$self-layout: call(str-replace($layout-mixin, 'relative-', ''), $self-layout, $ancestor);
+		@warn '$self-layout of #{$selector}: #{to-string($self-layout)}';
+
+		//filter $self-layout into a new map $self with keys:(width,font)
+		$self: map-select-pairs-with-unit($self-layout, $ancestor, 'px', $ancestor);
+		@warn '#{to-string($scope-chain)}';
+
+		//if the current scope has not been included in the $scope-chain, then add it to. else if the current scope already
+		//exists in the $scope-chain, then override it.
+		$scope-chain: map-merge($scope-chain, (list-to-string($selector):$self)) !global;
+		@warn '$scope-chain: #{to-string($scope-chain)}';
+
+		$self-layout: if(str-index($layout-mixin, 'relative'), relative-layout($self-layout, $ancestor), $self-layout);
+		@include print-css($self-layout);
+	}
+}

@@ -1,0 +1,9 @@
+//Image
+
+@function img($file-path,$file-name,$file-type:png) {
+	$last-char: str-slice($file-path, str-length($file-path));
+	$file-path: if($last-char=='/', $file-path, $file-path+'/');
+	$first-char: str-slice($file-type, 1);
+	$file-type: if($first-char=='.', $file-type, '.'+$file-type);
+	@return $file-path+$file-name+$file-type;
+}

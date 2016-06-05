@@ -1,0 +1,60 @@
+@import "constants";
+
+$footer-bg-height: 148px;
+$footer-bg-offset: 39px;
+$footer-height: $footer-bg-height+122px;
+
+body {
+	@at-root {
+		#footer {
+			width: 100%;
+			//      height:$footer-height;
+			padding-top: $footer-bg-height+-$footer-bg-offset;
+			background: #f8f8f0 url(#{$img-directory}footer-background.png) no-repeat center top;
+			//      background-size:contain;
+		}
+
+		@at-root {
+			#footer-content {
+				background: #1faf96;
+
+				p {
+					text-align: center;
+				}
+
+				@at-root {
+					#footer-title {
+						font-size: 24px;
+						line-height: 90px;
+						color: #ffffff;
+					}
+
+					#footer-download {
+						text-align: center;
+						a {
+							display: inline-block;
+							margin: 0 12px;
+							width: 220px;
+							line-height: 60px;
+							border-radius: 30px;
+							font-size: 24px;
+							border: 3px solid #ffffff;
+							background: #188975;
+							color: #ffffff;
+
+							img {
+								margin-right: 10px;
+							}
+						}
+					}
+
+					#footer-company-info {
+						font-size: 14px;
+						line-height: 90px;
+						color: #000000;
+					}
+				}
+			}
+		}
+	}
+}

@@ -1,0 +1,47 @@
+@import "constants";
+@import "../reset";
+@import "header";
+@import "switcher";
+@import "grids";
+@import "pager";
+@import "footer";
+
+#body-content {
+	@include grids(408px, 182px, 3, 5, 1, 30px) {
+		padding: 24px;
+		width: 408px+-3px+-2*24px;
+		height: 182px+-3px+-2*24px;
+		background: #ffffff;
+		border-radius: 4px;
+		border: 1px solid #d3d1cd;
+		font-size: 14px;
+		color: #909090;
+
+		.room-avatar {
+			float: left;
+			margin: 0 24px 182px+-2*24px+-86px 0;
+			border-radius: 50%;
+		}
+		.room-title {
+			margin-bottom: 8px;
+		}
+		.room-name {
+			font-size: 24px;
+			color: #2fd5b9;
+		}
+		.room-size {
+			float: right;
+		}
+
+		.room-body {
+			line-height: 1.5;
+			max-height: 4*1.5*1em;
+			overflow: hidden;
+		}
+		.room-info-field {
+			color: #333333;
+		}
+	}
+;
+
+}

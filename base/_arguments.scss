@@ -1,0 +1,13 @@
+//arguments
+
+@function args-unzip($args...) {
+	$args-list: ();
+	@each $arg in $args {
+		@if type-of($arg)=='list' {
+			$args-list: join($args-list, $arg);
+		} @else {
+			$args-list: append($args-list, $arg);
+		}
+	}
+	@return $args-list;
+}

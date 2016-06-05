@@ -1,0 +1,26 @@
+$counter-enable: false;
+$debug-for-typology: false;
+
+@if $counter-enable {
+	html {
+		counter-reset: index;
+	}
+}
+
+* {
+	outline: 1px solid red;
+	@if ($counter-enable & & $debug-for-typology) {
+
+		&:before {
+			counter-increment: index;
+			@if $debug-for-typology {
+				content: "x";
+			} @else if $counter-enable {
+				content: counter(index) ". " attr(class);
+				// top, left are initially assigned with auto so each element stay in its original
+				// position, though occupy no space.
+				position: absolute;
+			}
+		}
+	}
+}

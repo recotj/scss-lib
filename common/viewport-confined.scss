@@ -1,0 +1,24 @@
+* {
+	white-space: nowrap;
+}
+
+%ellipsis {
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+@mixin ellipsis($width: null) {
+	@if ($width) {
+		width: $width;
+	}
+	@extend %ellipsis;
+}
+
+p {
+	@extend %ellipsis;
+}
+
+html {
+	height: 100%;
+	overflow: hidden;
+}
